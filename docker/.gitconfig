@@ -1,0 +1,9 @@
+[alias]
+    tree = log --oneline --decorate --all --graph
+[merge]
+    conflictstyle = diff3
+[credential]
+	helper = cache
+[user]
+	email = jwfromm@cs.washington.edu
+	name = Joshua Fromm

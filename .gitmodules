@@ -1,0 +1,6 @@
+[submodule "tensorflow"]
+	path = tensorflow
+	url = https://github.com/jwfromm/tensorflow.git
+[submodule "models"]
+	path = models
+	url = https://github.com/tensorflow/models.git
