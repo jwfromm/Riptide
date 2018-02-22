@@ -124,6 +124,7 @@ RUN pip --no-cache-dir install \
         requests_ntlm \
         docopt \
         tensorboard \
+        jupyterlab \
         && \
     python -m ipykernel.kernelspec
 
