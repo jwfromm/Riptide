@@ -4,3 +4,9 @@
 [submodule "models"]
 	path = models
 	url = https://github.com/tensorflow/models.git
+[submodule "tvm"]
+	path = tvm
+	url = https://github.com/jwfromm/tvm.git
+[submodule "Halide"]
+	path = Halide
+	url = https://github.com/jwfromm/Halide.git

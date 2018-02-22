@@ -104,6 +104,49 @@ RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/lib
     rm -rf /root/.cache
 # Clean up pip wheel and Bazel cache when done.
 
+# Halide setup
+
+# install pybind
+WORKDIR /
+RUN git clone https://github.com/pybind/pybind11.git
+WORKDIR /pybind11
+RUN python setup.py build
+RUN python setup.py install
+ENV PYBIND11_PATH /pybind11
+ENV CPLUS_INCLUDE_PATH /pybind11/include
+
+# install halide
+WORKDIR /
+RUN ln -s /usr/bin/llvm-config-4.0 /usr/bin/llvm-config
+RUN ln -s /usr/bin/clang-4.0 /usr/bin/clang
+#RUN git clone https://github.com/halide/Halide.git
+COPY Halide /Halide
+WORKDIR /Halide
+
+RUN sed -i 's/-lpthread/-lpthread -ltinfo/' Makefile 
+RUN make distrib -j8
+RUN make install
+#
+ENV HALIDE_DISTRIB_PATH /Halide/distrib
+
+# set up python bindings
+RUN ln -s /usr/lib/x86_64-linux-gnu/libboost_python-py35.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
+WORKDIR /Halide/python_bindings
+#COPY python_bindings_makefile.patch Makefile.patch
+#RUN patch -p2 < Makefile.patch
+RUN make -j8
+ENV PYTHONPATH /Halide/python_bindings/bin:$PYTHONPATH
+
+# install tvm
+COPY tvm /tvm
+COPY docker/tvm_config.mk /tvm/make/config.mk
+WORKDIR /tvm
+RUN make -j8
+WORKDIR /tvm/python
+RUN python setup.py install
+WORKDIR /tvm/topi/python
+RUN python setup.py install
+
 RUN pip --no-cache-dir install \
         Pillow \
         ipykernel \
