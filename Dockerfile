@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         cuda-cusparse-dev-9-0 \
         curl \
         git \
+        vim \
         libcurl3-dev \
         libfreetype6-dev \
         libpng12-dev \
@@ -25,23 +26,41 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         zip \
         zlib1g-dev \
         wget \
+        cmake \
+        clang-4.0 \
+        llvm-4.0-dev \
+        unzip \
+        libboost-python-dev \
+        software-properties-common \
+        rsync \
+        x11-apps \
+        graphviz \
         && \
     rm -rf /var/lib/apt/lists/* && \
     find /usr/local/cuda-9.0/lib64/ -type f -name 'lib*_static.a' -not -name 'libcudart_static.a' -delete && \
     rm /usr/lib/x86_64-linux-gnu/libcudnn_static_v7.a
 
+# get gcc-7
+#RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y
 
+#RUN apt-get update && apt-get install -y --no-install-recommends \
+#        gcc-7 \
+#        g++-7\
+#        && \
+#     rm -rf /var/lib/apt/lists/*
+
+#RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 
 ENV PYTHON_VERSION=3.6
 RUN curl -o ~/miniconda.sh -O  https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh  && \
      chmod +x ~/miniconda.sh && \
      ~/miniconda.sh -b -p /opt/conda && \     
      rm ~/miniconda.sh && \
-#     /opt/conda/bin/conda install conda-build && \
-     /opt/conda/bin/conda create -y --name riptide-py$PYTHON_VERSION python=$PYTHON_VERSION numpy pyyaml scipy ipython mkl&& \
+     /opt/conda/bin/conda install conda-build && \
+     /opt/conda/bin/conda create -y --name riptide-py$PYTHON_VERSION python=$PYTHON_VERSION numpy pyyaml scipy ipython mkl setuptools cffi cmake && \
      /opt/conda/bin/conda clean -ya 
 ENV PATH /opt/conda/envs/riptide-py$PYTHON_VERSION/bin:$PATH
-RUN conda install numpy pyyaml mkl setuptools cmake cffi
+#RUN conda install numpy pyyaml mkl setuptools cmake cffi
 
 RUN pip --no-cache-dir install \
         ipykernel \
@@ -106,15 +125,6 @@ RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/lib
 
 # Halide setup
 
-# install pybind
-WORKDIR /
-RUN git clone https://github.com/pybind/pybind11.git
-WORKDIR /pybind11
-RUN python setup.py build
-RUN python setup.py install
-ENV PYBIND11_PATH /pybind11
-ENV CPLUS_INCLUDE_PATH /pybind11/include
-
 # install halide
 WORKDIR /
 RUN ln -s /usr/bin/llvm-config-4.0 /usr/bin/llvm-config
@@ -123,19 +133,26 @@ RUN ln -s /usr/bin/clang-4.0 /usr/bin/clang
 COPY Halide /Halide
 WORKDIR /Halide
 
-RUN sed -i 's/-lpthread/-lpthread -ltinfo/' Makefile 
-RUN make distrib -j8
-RUN make install
+# install pybind
+#WORKDIR /
+#RUN git clone https://github.com/pybind/pybind11.git
+#WORKDIR /pybind11
+#RUN python setup.py build
+#RUN python setup.py install
+#ENV PYBIND11_PATH /pybind11
+#ENV CPLUS_INCLUDE_PATH /pybind11/include
+
+#RUN sed -i 's/-lpthread/-lpthread -ltinfo/' Makefile 
+#RUN make distrib -j8
+#RUN make install
 #
 ENV HALIDE_DISTRIB_PATH /Halide/distrib
 
 # set up python bindings
-RUN ln -s /usr/lib/x86_64-linux-gnu/libboost_python-py35.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
-WORKDIR /Halide/python_bindings
-#COPY python_bindings_makefile.patch Makefile.patch
-#RUN patch -p2 < Makefile.patch
-RUN make -j8
-ENV PYTHONPATH /Halide/python_bindings/bin:$PYTHONPATH
+#RUN ln -s /usr/lib/x86_64-linux-gnu/libboost_python-py35.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
+#WORKDIR /Halide/python_bindings
+#RUN make -j8
+#ENV PYTHONPATH /Halide/python_bindings/bin:$PYTHONPATH
 
 # install tvm
 COPY tvm /tvm
@@ -168,6 +185,8 @@ RUN pip --no-cache-dir install \
         docopt \
         tensorboard \
         jupyterlab \
+        keras \
+        h5py \
         && \
     python -m ipykernel.kernelspec
 
