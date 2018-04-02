@@ -91,7 +91,7 @@ RUN mkdir /bazel && \
 WORKDIR /
 RUN git clone https://github.com/jwfromm/tensorflow.git
 WORKDIR /tensorflow
-RUN git checkout origin/r1.6
+#RUN git checkout origin/r1.6
 
 # Configure the build for our CUDA configuration.
 ENV CI_BUILD_PYTHON python
