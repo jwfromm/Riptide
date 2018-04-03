@@ -1,4 +1,5 @@
 import tensorflow as tf
+import os
 
 def eval_image(image, height=224, width=224, scope=None):
   """Prepare one image for evaluation.
@@ -47,41 +48,43 @@ def decode_jpeg(image_buffer, scope=None):
     image = tf.image.convert_image_dtype(image, dtype=tf.float32)
     return image
 
-def imgs_input_fn(path, prefix, preprocess=None, perform_shuffle=False, repeat_count=None, batch_size=1, workers=8):
+def tfrecord_dataset(path, prefix, preprocess=None, perform_shuffle=False, repeat_count=1, batch_size=1, workers=8, return_dataset=True):
     tf_record_pattern = os.path.join(path, '%s-*' % prefix)
     files = tf.gfile.Glob(tf_record_pattern)
 
-    with tf.device('/cpu:0'):
-        def _decode(proto):
-            feature_map = {
-              'image/encoded': tf.FixedLenFeature([], dtype=tf.string,
-                                                  default_value=''),
-              'image/class/label': tf.FixedLenFeature([1], dtype=tf.int64,
-                                                      default_value=-1),
-              'image/class/text': tf.FixedLenFeature([], dtype=tf.string,
-                                                     default_value=''),
-            }
-            parsed_features = tf.parse_single_example(proto, feature_map)
-            features = decode_jpeg(parsed_features["image/encoded"])
-            labels = parsed_features["image/class/label"]
-            if preprocess is None:
-                features = eval_image(features)
-            else:
-                features = preprocess(features)
-            return features, labels
-        dataset = tf.data.TFRecordDataset(dataset.data_files())
-        dataset = dataset.map(_decode, num_parallel_calls=8)
-        if perform_shuffle:
-            # Randomizes input using a window of 256 elements (read into memory)
-            dataset = dataset.shuffle(buffer_size=1024)
-        if repeat_count is None:
-            dataset = dataset.repeat()
+    #with tf.device('/cpu:0'):
+    def _decode(proto):
+        feature_map = {
+          'image/encoded': tf.FixedLenFeature([], dtype=tf.string,
+                                              default_value=''),
+          'image/class/label': tf.FixedLenFeature([1], dtype=tf.int64,
+                                                  default_value=-1),
+          'image/class/text': tf.FixedLenFeature([], dtype=tf.string,
+                                                 default_value=''),
+        }
+        parsed_features = tf.parse_single_example(proto, feature_map)
+        features = decode_jpeg(parsed_features["image/encoded"])
+        labels = parsed_features["image/class/label"]
+        if preprocess is None:
+            features = eval_image(features)
         else:
-            dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times
-        dataset = dataset.batch(batch_size)  # Batch size to use
-        dataset = dataset.prefetch(1024) # prefetch samples
+            features = preprocess(features)
+        return features, tf.cast(labels, tf.int32)
+    dataset = tf.data.TFRecordDataset(files)
+    dataset = dataset.map(_decode, num_parallel_calls=8)
+    if perform_shuffle:
+        # Randomizes input using a window of 256 elements (read into memory)
+        dataset = dataset.shuffle(buffer_size=1024)
+    if repeat_count is None:
+        dataset = dataset.repeat()
+    else:
+        dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times
+    dataset = dataset.batch(batch_size)  # Batch size to use
+    dataset = dataset.prefetch(1024) # prefetch samples
+    if return_dataset:
+        return dataset
+    else:
         iterator = dataset.make_one_shot_iterator()
         batch_features, batch_labels = iterator.get_next()
-        batch_labels = tf.cast(batch_labels, dtype=tf.int32)
         batch_labels = tf.squeeze(tf.one_hot(batch_labels, 1000), axis=1)
         return {'input_1': batch_features}, batch_labels
