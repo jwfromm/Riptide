@@ -48,9 +48,9 @@ def decode_jpeg(image_buffer, scope=None):
     image = tf.image.convert_image_dtype(image, dtype=tf.float32)
     return image
 
-def tfrecord_dataset(path, prefix, preprocess=None, perform_shuffle=False, repeat_count=1, batch_size=1, workers=8, return_dataset=True):
-    tf_record_pattern = os.path.join(path, '%s-*' % prefix)
-    files = tf.gfile.Glob(tf_record_pattern)
+def tfrecord_dataset(path, prefix, preprocess=None, shuffle=False, repeat_count=1, batch_size=1, workers=4, return_dataset=True):
+    pattern = os.path.join(path, prefix + "-*")
+    files = tf.data.Dataset.list_files(pattern)
 
     #with tf.device('/cpu:0'):
     def _decode(proto):
@@ -70,17 +70,21 @@ def tfrecord_dataset(path, prefix, preprocess=None, perform_shuffle=False, repea
         else:
             features = preprocess(features)
         return features, tf.cast(labels, tf.int32)
-    dataset = tf.data.TFRecordDataset(files)
-    dataset = dataset.map(_decode, num_parallel_calls=8)
-    if perform_shuffle:
+    dataset = files.apply(tf.contrib.data.parallel_interleave(tf.data.TFRecordDataset, cycle_length=workers, sloppy=True))
+    #dataset = files.interleave(tf.data.TFRecordDataset, cycle_length=32, block_length=batch_size)
+    #dataset = tf.data.TFRecordDataset(files)
+    
+    if shuffle:
         # Randomizes input using a window of 256 elements (read into memory)
-        dataset = dataset.shuffle(buffer_size=1024)
+        dataset = dataset.shuffle(buffer_size=128)
     if repeat_count is None:
         dataset = dataset.repeat()
     else:
         dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times
-    dataset = dataset.batch(batch_size)  # Batch size to use
-    dataset = dataset.prefetch(1024) # prefetch samples
+    dataset = dataset.apply(tf.contrib.data.map_and_batch(map_func=_decode, batch_size=batch_size, num_parallel_batches=workers))        
+    #dataset = dataset.map(_decode)
+    #dataset = dataset.batch(batch_size)
+    #dataset = dataset.prefetch(batch_size) # prefetch samples
     if return_dataset:
         return dataset
     else:

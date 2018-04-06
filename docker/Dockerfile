@@ -105,7 +105,7 @@ ENV TF_ENABLE_XLA=1
 RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1 && \
     LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH} \
     tensorflow/tools/ci_build/builds/configured GPU \
-    bazel build -c opt --config=cuda --config=mkl\
+    bazel build -c opt --copt=-march=native --copt=-mfpmath=both --config=cuda --config=mkl\
 	--cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0" \
         tensorflow/tools/pip_package:build_pip_package && \
     rm /usr/local/cuda/lib64/stubs/libcuda.so.1 && \
