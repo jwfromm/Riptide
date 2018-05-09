@@ -4,13 +4,15 @@ RUN echo "deb http://developer.download.nvidia.com/compute/machine-learning/repo
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
-        cuda-command-line-tools-9-0 \
-        cuda-cublas-dev-9-0 \
-        cuda-cudart-dev-9-0 \
-        cuda-cufft-dev-9-0 \
-        cuda-curand-dev-9-0 \
-        cuda-cusolver-dev-9-0 \
-        cuda-cusparse-dev-9-0 \
+        cuda-command-line-tools-9-1 \
+        cuda-cublas-dev-9-1 \
+        cuda-cudart-dev-9-1 \
+        cuda-cufft-dev-9-1 \
+        cuda-curand-dev-9-1 \
+        cuda-cusolver-dev-9-1 \
+        cuda-cusparse-dev-9-1 \
+        libcudnn7=7.0.5.15-1+cuda9.1 \
+        libcudnn7-dev=7.0.5.15-1+cuda9.1 \
         curl \
         git \
         vim \
@@ -37,7 +39,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         graphviz \
         && \
     rm -rf /var/lib/apt/lists/* && \
-    find /usr/local/cuda-9.0/lib64/ -type f -name 'lib*_static.a' -not -name 'libcudart_static.a' -delete && \
+    find /usr/local/cuda-9.1/lib64/ -type f -name 'lib*_static.a' -not -name 'libcudart_static.a' -delete && \
     rm /usr/lib/x86_64-linux-gnu/libcudnn_static_v7.a
 
 
