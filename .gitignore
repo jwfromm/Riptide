@@ -4,6 +4,7 @@ logs/
 checkpoints/
 # testing python notebooks
 Untitled.ipynb
+MNIST-data/
 
 # Model files
 *.pth.tar

@@ -73,18 +73,17 @@ def tfrecord_dataset(path, prefix, preprocess=None, shuffle=False, repeat_count=
     dataset = files.apply(tf.contrib.data.parallel_interleave(tf.data.TFRecordDataset, cycle_length=workers, sloppy=True))
     #dataset = files.interleave(tf.data.TFRecordDataset, cycle_length=32, block_length=batch_size)
     #dataset = tf.data.TFRecordDataset(files)
-    
+    dataset = dataset.apply(tf.contrib.data.map_and_batch(map_func=_decode, batch_size=batch_size, num_parallel_batches=workers))
     if shuffle:
         # Randomizes input using a window of 256 elements (read into memory)
         dataset = dataset.shuffle(buffer_size=128)
     if repeat_count is None:
         dataset = dataset.repeat()
     else:
-        dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times
-    dataset = dataset.apply(tf.contrib.data.map_and_batch(map_func=_decode, batch_size=batch_size, num_parallel_batches=workers))        
+        dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times        
     #dataset = dataset.map(_decode)
     #dataset = dataset.batch(batch_size)
-    #dataset = dataset.prefetch(batch_size) # prefetch samples
+    #dataset = dataset.prefetch(4*batch_size) # prefetch samples
     if return_dataset:
         return dataset
     else:
