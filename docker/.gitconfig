@@ -1,9 +1,9 @@
-[alias]
-    tree = log --oneline --decorate --all --graph
-[merge]
-    conflictstyle = diff3
-[credential]
-	helper = cache
 [user]
-	email = jwfromm@cs.washington.edu
-	name = Joshua Fromm
+    email = jwfromm@uw.edu
+[alias]
+    tree = log --oneline --decorate --all --graph    
+[merge]
+	conflictstyle = diff3
+	tool = meld
+[credential]
+	helper = cache --timeout 7200
