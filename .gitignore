@@ -6,6 +6,19 @@ checkpoints/
 Untitled.ipynb
 MNIST-data/
 
+# bazel files
+bazel-*
+.Trash*
+
+# timeline profiling tools
+timeline.ctf.json
+
+# Tensorflow models repo
+models/
+
+# pkl files
+*.pkl
+
 # Model files
 *.pth.tar
 

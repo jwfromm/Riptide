@@ -1,4 +1,0 @@
-let g:netrw_dirhistmax  =10
-let g:netrw_dirhist_cnt =2
-let g:netrw_dirhist_1='/data/imagenet/train'
-let g:netrw_dirhist_2='/data2/activitydata/GOPR0964'

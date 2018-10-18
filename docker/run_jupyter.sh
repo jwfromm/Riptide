@@ -14,5 +14,8 @@
 # limitations under the License.
 # ==============================================================================
 
+jupyter nbextension enable --py widgetsnbextension
+jupyter nbextension install --py --symlink tensorflow_model_analysis
+jupyter nbextension enable --py tensorflow_model_analysis
 
 jupyter lab "$@"
