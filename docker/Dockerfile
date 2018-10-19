@@ -93,7 +93,10 @@ WORKDIR /workspace
 WORKDIR /root
 # set utf-8 encoding, weird that we have to do this haha
 ENV LC_ALL "C.UTF-8"
-ENV PYTHONPATH /root/Riptide/models/research:$PYTHONPATH
+ENV PYTHONPATH /root/models/research:$PYTHONPATH
 ENV PYTHONPATH /root/Riptide:$PYTHONPATH
+
+# Make root bazel workspace
+RUN touch /root/WORKSPACE
 
 RUN chmod -R a+w /workspace
