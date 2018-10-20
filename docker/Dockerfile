@@ -28,11 +28,11 @@ RUN sh -c 'echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources.
 RUN apt-get update && apt-get install -y intel-mkl-64bit-2019.0-045
 
 # install tvm
-WORKDIR /
+WORKDIR /root
 RUN git clone --recursive https://github.com/jwfromm/tvm.git
-RUN mkdir /tvm/build
-COPY tvm_config.cmake /tvm/build/config.cmake
-WORKDIR /tvm/build
+RUN mkdir /root/tvm/build
+COPY tvm_config.cmake /root/tvm/build/config.cmake
+WORKDIR /root/tvm/build
 RUN cmake ..
 RUN make -j8
 #WORKDIR /tvm/python
@@ -41,11 +41,11 @@ RUN make -j8
 #RUN python setup.py install
 #WORKDIR /tvm/nnvm/python
 #RUN python setup.py install
-ENV PYTHONPATH /tvm/python:$PYTHONPATH
-ENV PYTHONPATH /tvm/topi/python:$PYTHONPATH
-ENV PYTHONPATH /tvm/nnvm/python:$PYTHONPATH
-ENV PYTHONPATH /tvm/vta/python:$PYTHONPATH
-WORKDIR /tvm
+ENV PYTHONPATH /root/tvm/python:$PYTHONPATH
+ENV PYTHONPATH /root/tvm/topi/python:$PYTHONPATH
+ENV PYTHONPATH /root/tvm/nnvm/python:$PYTHONPATH
+ENV PYTHONPATH /root/tvm/vta/python:$PYTHONPATH
+WORKDIR /root/tvm
 RUN make cython2
 
 RUN pip --no-cache-dir install \

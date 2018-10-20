@@ -8,5 +8,6 @@ py_test(
     srcs = ["datasets_test.py"],
     deps = [
         ":datasets",
+        "//models/research/slim:inception_preprocessing",
     ],
 )
