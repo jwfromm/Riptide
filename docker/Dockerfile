@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python-setuptools \
         libopenblas-dev \
         llvm-dev \
+        yapf \
         && \
     rm -rf /var/lib/apt/lists/*
 
@@ -48,6 +49,17 @@ ENV PYTHONPATH /root/tvm/vta/python:$PYTHONPATH
 WORKDIR /root/tvm
 RUN make cython2
 
+# Set up gotools
+WORKDIR /tmp
+RUN wget https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
+RUN tar -C /usr/local -xzf go1.11.1.linux-amd64.tar.gz
+ENV PATH $PATH:/usr/local/go/bin
+WORKDIR /root
+
+# Install buildifier
+RUN go get github.com/bazelbuild/buildtools/buildifier
+ENV PATH $PATH:/root/go/bin
+
 RUN pip --no-cache-dir install \
         Pillow \
         ipykernel \
@@ -56,6 +68,7 @@ RUN pip --no-cache-dir install \
         pydot \
         pydot_ng \
         pyyaml \
+        yapf \
         scikit-learn \
         scikit-image \
         gensim \
@@ -84,6 +97,7 @@ RUN pip --no-cache-dir install \
     python -m ipykernel.kernelspec
 
 # Set up some convenience stuff
+COPY .vim /root/.vim
 COPY .vimrc /root
 COPY .gitconfig /root
 
