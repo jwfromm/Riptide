@@ -1,8 +1,10 @@
 import tensorflow as tf
 import tensorflow.keras as keras
-from tensorflow.python.ops import nn
-
+from tensorflow.python.framework import common_shapes
+from tensorflow.keras.layers import Activation, BatchNormalization, GlobalAveragePooling2D, Flatten
 """Quantization scope, defines the modification of operator"""
+
+
 class Config(object):
     """Configuration scope of current mode.
 
@@ -32,13 +34,10 @@ class Config(object):
     """
     current = None
 
-    def __init__(self,
-                 actQ=None,
-                 weightQ=None,
-                 activation=None,
+    def __init__(self, actQ=None, weightQ=None, activation=None,
                  clusters=None):
-        self.actQ = actQ if actQ else lambda _, x : x
-        self.weightQ = weightQ if weightQ else lambda _, x : x
+        self.actQ = actQ if actQ else lambda _, x: x
+        self.weightQ = weightQ if weightQ else lambda _, x: x
         self.clusters = clusters
 
     def __enter__(self):
@@ -49,6 +48,7 @@ class Config(object):
     def __exit__(self, ptype, value, trace):
         Config.current = self._old_manager
 
+
 class Conv2D(keras.layers.Conv2D):
     def __init__(self, *args, **kwargs):
         super(Conv2D, self).__init__(*args, **kwargs)
@@ -56,9 +56,10 @@ class Conv2D(keras.layers.Conv2D):
         self.actQ = self.scope.actQ
         self.weightQ = self.scope.weightQ
         self.clusters = self.scope.clusters
+
     def call(self, inputs):
         if self.clusters is not None:
-            inputs = self.actQ(inputs, clusters)
+            inputs = self.actQ(inputs, self.clusters)
         else:
             inputs = self.actQ(inputs)
         kernel = self.weightQ(self.kernel)
@@ -66,10 +67,49 @@ class Conv2D(keras.layers.Conv2D):
 
         if self.use_bias:
             if self.data_format == 'channels_first':
-                outputs = nn.bias_add(outputs, self.bias, data_format='NCHW')
+                outputs = tf.nn.bias_add(
+                    outputs, self.bias, data_format='NCHW')
             else:
-                outputs = nn.bias_add(outputs, self.bias, data_format='NHWC')
+                outputs = tf.nn.bias_add(
+                    outputs, self.bias, data_format='NHWC')
 
         if self.activation is not None:
             return self.activation(outputs)
         return outputs
+
+
+class Dense(keras.layers.Dense):
+    def __init__(self, *args, **kwargs):
+        super(Dense, self).__init__(*args, **kwargs)
+        self.scope = Config.current
+        self.actQ = self.scope.actQ
+        self.weightQ = self.scope.weightQ
+        self.clusters = self.scope.clusters
+
+    def call(self, inputs):
+        inputs = tf.convert_to_tensor(inputs, dtype=self.dtype)
+        if self.clusters is not None:
+            inputs = self.actQ(inputs, self.clusters)
+        else:
+            inputs = self.actQ(inputs)
+        kernel = self.weightQ(self.kernel)
+        rank = common_shapes.rank(inputs)
+        if rank > 2:
+            # Broadcasting is required for the inputs.
+            outputs = tf.tensordot(inputs, kernel, [[rank - 1], [0]])
+            # Reshape the output back to the original ndim of the input.
+            if not context.executing_eagerly():
+                shape = inputs.get_shape().as_list()
+                output_shape = shape[:-1] + [self.units]
+                outputs.set_shape(output_shape)
+        else:
+            outputs = tf.matmul(inputs, kernel)
+        if self.use_bias:
+            outputs = tf.nn.bias_add(outputs, self.bias)
+        if self.activation is not None:
+            return self.activation(outputs)  # pylint: disable=not-callable
+        return outputs
+
+
+NormalConv2D = keras.layers.Conv2D
+NormalDense = keras.layers.Dense

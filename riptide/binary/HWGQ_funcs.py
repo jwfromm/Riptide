@@ -1,5 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras as keras
+from bit_approximations import load_clusters, load_bits
+
 
 def get_quantize_bits(x):
     if len(x.shape) > 1:
@@ -10,8 +12,9 @@ def get_quantize_bits(x):
     for i in range(len(x.shape) - 1):
         mean = tf.expand_dims(mean, axis=-1)
     bits = tf.cast(x >= 0, tf.float32)
-    bits = (2*bits) - 1
+    bits = (2 * bits) - 1
     return mean, bits
+
 
 @tf.custom_gradient
 def Quantize(x):
@@ -23,6 +26,7 @@ def Quantize(x):
         return [dx]
 
     return y, grad_fn
+
 
 def get_HWGQ_bits(x, clusters):
     # Computes HWG quantization and returns the integer binary value.
@@ -36,6 +40,7 @@ def get_HWGQ_bits(x, clusters):
     distance = tf.abs(x - clusters)
     indices = tf.argmin(distance, axis=-1)
     return indices
+
 
 @tf.custom_gradient
 def HWGQuantize(x, clusters):
