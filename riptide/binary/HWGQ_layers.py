@@ -36,8 +36,8 @@ class Config(object):
 
     def __init__(self, actQ=None, weightQ=None, activation=None,
                  clusters=None):
-        self.actQ = actQ if actQ else lambda _, x: x
-        self.weightQ = weightQ if weightQ else lambda _, x: x
+        self.actQ = actQ if actQ else lambda x: x
+        self.weightQ = weightQ if weightQ else lambda x: x
         self.clusters = clusters
 
     def __enter__(self):

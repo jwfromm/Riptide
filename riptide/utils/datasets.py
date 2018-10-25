@@ -1,6 +1,7 @@
 import os
 import tensorflow as tf
 from functools import partial
+from models.research.slim.preprocessing.inception_preprocessing import preprocess_image
 
 FLAGS = tf.flags.FLAGS
 
@@ -43,16 +44,21 @@ def _decode_imagenet(proto, size, preprocess):
     return features, tf.cast(labels, tf.int32)
 
 
-def get_imagenet_dataset(batch_size, split='train', preprocess=None, size=224):
+def get_imagenet_dataset(batch_size, is_training=True, preprocess=None, size=224):
+    if is_training:
+        split = 'train'
+    else:
+        split = 'val'
     shard_ds = _get_shard_dataset(FLAGS.record_path, split=split)
     imagenet_ds = shard_ds.apply(
         tf.contrib.data.parallel_interleave(
             tf.data.TFRecordDataset, cycle_length=4, sloppy=True))
+
     decode_fn = partial(_decode_imagenet, size=size, preprocess=preprocess)
     imagenet_ds = imagenet_ds.apply(
         tf.contrib.data.map_and_batch(
             map_func=decode_fn, batch_size=batch_size, num_parallel_batches=4))
-    if split == 'train':
+    if is_training
         imagenet_ds = imagenet_ds.shuffle(buffer_size=10 * batch_size)
     imagenet_ds = imagenet_ds.prefetch(buffer_size=None)
     return imagenet_ds
@@ -68,10 +74,14 @@ def _parse_imagefolder_samples(filename, label, preprocess=None):
 
 def imagefolder_dataset(root,
                         batch_size,
-                        split='train',
+                        is_training=True,
                         preprocess=None,
                         num_workers=4):
     valid_extensions = ('.png', '.jpg', '.jpeg')
+    if is_training:
+        split = 'train'
+    else:
+        split = 'val'
     split_dir = os.path.join(root, split)
     labels_list = os.listdir(split_dir)
     # Iterate through folders and compose list of files and their label.
@@ -92,7 +102,7 @@ def imagefolder_dataset(root,
             map_func=decode_fn,
             batch_size=batch_size,
             num_parallel_batches=num_workers))
-    if split == 'train':
+    if is_training:
         imagenet_ds = imagenet_ds.shuffle(buffer_size=10 * batch_size)
         imagenet_ds = imagenet_ds.prefetch(buffer_size=None)
     return imagenet_ds
