@@ -1,10 +1,10 @@
 import os
 import tensorflow as tf
 from functools import partial
-from models.research.slim.preprocessing.inception_preprocessing import preprocess_image
 
 FLAGS = tf.flags.FLAGS
 
+tf.flags.DEFINE_string('f', '', 'kernel')
 tf.flags.DEFINE_string('record_path', '/data3/imagenet/tfrecords',
                        'Path to tfrecord shards.')
 
@@ -24,7 +24,7 @@ def _decode_jpeg(image_buffer, size, scope=None):
     return image
 
 
-def _decode_imagenet(proto, size, preprocess):
+def _decode_imagenet(proto, preprocess):
     feature_map = {
         'image/encoded':
         tf.FixedLenFeature([], dtype=tf.string, default_value=''),
@@ -35,7 +35,9 @@ def _decode_imagenet(proto, size, preprocess):
     }
 
     parsed_features = tf.parse_single_example(proto, feature_map)
-    features = _decode_jpeg(parsed_features['image/encoded'], size)
+    #features = _decode_jpeg(parsed_features['image/encoded'], size)
+    features = tf.image.decode_jpeg(
+        parsed_features['image/encoded'], channels=3)
     labels = parsed_features['image/class/label']
 
     if preprocess != None:
@@ -44,7 +46,7 @@ def _decode_imagenet(proto, size, preprocess):
     return features, tf.cast(labels, tf.int32)
 
 
-def get_imagenet_dataset(batch_size, is_training=True, preprocess=None, size=224):
+def get_imagenet_dataset(batch_size, is_training=True, preprocess=None):
     if is_training:
         split = 'train'
     else:
@@ -54,11 +56,11 @@ def get_imagenet_dataset(batch_size, is_training=True, preprocess=None, size=224
         tf.contrib.data.parallel_interleave(
             tf.data.TFRecordDataset, cycle_length=4, sloppy=True))
 
-    decode_fn = partial(_decode_imagenet, size=size, preprocess=preprocess)
+    decode_fn = partial(_decode_imagenet, preprocess=preprocess)
     imagenet_ds = imagenet_ds.apply(
         tf.contrib.data.map_and_batch(
             map_func=decode_fn, batch_size=batch_size, num_parallel_batches=4))
-    if is_training
+    if is_training:
         imagenet_ds = imagenet_ds.shuffle(buffer_size=10 * batch_size)
     imagenet_ds = imagenet_ds.prefetch(buffer_size=None)
     return imagenet_ds
