@@ -34,7 +34,6 @@ def _decode_imagenet(proto, preprocess):
     }
 
     parsed_features = tf.parse_single_example(proto, feature_map)
-    #features = _decode_jpeg(parsed_features['image/encoded'], size)
     features = tf.image.decode_jpeg(parsed_features['image'], channels=3)
     labels = parsed_features['label']
 
@@ -44,7 +43,10 @@ def _decode_imagenet(proto, preprocess):
     return features, tf.cast(labels, tf.int32)
 
 
-def imagerecord_dataset(batch_size, is_training=True, preprocess=None):
+def imagerecord_dataset(batch_size,
+                        is_training=True,
+                        preprocess=None,
+                        num_workers=4):
     if is_training:
         split = 'train'
     else:
@@ -52,15 +54,17 @@ def imagerecord_dataset(batch_size, is_training=True, preprocess=None):
     shard_ds = _get_shard_dataset(FLAGS.record_path, split=split)
     imagenet_ds = shard_ds.apply(
         tf.contrib.data.parallel_interleave(
-            tf.data.TFRecordDataset, cycle_length=4, sloppy=True))
+            tf.data.TFRecordDataset, cycle_length=num_workers, sloppy=True))
 
     decode_fn = partial(_decode_imagenet, preprocess=preprocess)
-    imagenet_ds = imagenet_ds.apply(
-        tf.contrib.data.map_and_batch(
-            map_func=decode_fn, batch_size=batch_size, num_parallel_batches=4))
+    imagenet_ds = imagenet_ds.prefetch(buffer_size=None)
     if is_training:
         imagenet_ds = imagenet_ds.shuffle(buffer_size=100)
-    imagenet_ds = imagenet_ds.prefetch(buffer_size=None)
+    imagenet_ds = imagenet_ds.apply(
+        tf.contrib.data.map_and_batch(
+            map_func=decode_fn,
+            batch_size=batch_size,
+            num_parallel_batches=num_workers))
     return imagenet_ds
 
 
@@ -99,12 +103,13 @@ def imagefolder_dataset(root,
     files, labels = zip(*samples)
     imagenet_ds = tf.data.Dataset.from_tensor_slices((list(files),
                                                       list(labels)))
+    if is_training:
+        imagenet_ds = imagenet_ds.shuffle(buffer_size=100)
+    imagenet_ds = imagenet_ds.prefetch(buffer_size=None)
+
     imagenet_ds = imagenet_ds.apply(
         tf.contrib.data.map_and_batch(
             map_func=decode_fn,
             batch_size=batch_size,
             num_parallel_batches=num_workers))
-    if is_training:
-        imagenet_ds = imagenet_ds.shuffle(buffer_size=100)
-        imagenet_ds = imagenet_ds.prefetch(buffer_size=None)
     return imagenet_ds

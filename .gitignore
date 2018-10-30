@@ -13,9 +13,6 @@ bazel-*
 # timeline profiling tools
 timeline.ctf.json
 
-# Tensorflow models repo
-models/
-
 # pkl files
 *.pkl
 
