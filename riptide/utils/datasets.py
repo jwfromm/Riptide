@@ -1,6 +1,7 @@
 import os
 import tensorflow as tf
 from functools import partial
+from random import shuffle
 
 FLAGS = tf.flags.FLAGS
 
@@ -26,19 +27,16 @@ def _decode_jpeg(image_buffer, size, scope=None):
 
 def _decode_imagenet(proto, preprocess):
     feature_map = {
-        'image/encoded':
-        tf.FixedLenFeature([], dtype=tf.string, default_value=''),
-        'image/class/label':
-        tf.FixedLenFeature([1], dtype=tf.int64, default_value=-1),
-        'image/class/text':
-        tf.FixedLenFeature([], dtype=tf.string, default_value=''),
+        'image': tf.FixedLenFeature([], dtype=tf.string, default_value=''),
+        'label': tf.FixedLenFeature([1], dtype=tf.int64, default_value=-1),
+        #'label_name':
+        #tf.FixedLenFeature([], dtype=tf.string, default_value=''),
     }
 
     parsed_features = tf.parse_single_example(proto, feature_map)
     #features = _decode_jpeg(parsed_features['image/encoded'], size)
-    features = tf.image.decode_jpeg(
-        parsed_features['image/encoded'], channels=3)
-    labels = parsed_features['image/class/label']
+    features = tf.image.decode_jpeg(parsed_features['image'], channels=3)
+    labels = parsed_features['label']
 
     if preprocess != None:
         features = preprocess(features)
@@ -46,7 +44,7 @@ def _decode_imagenet(proto, preprocess):
     return features, tf.cast(labels, tf.int32)
 
 
-def get_imagenet_dataset(batch_size, is_training=True, preprocess=None):
+def imagerecord_dataset(batch_size, is_training=True, preprocess=None):
     if is_training:
         split = 'train'
     else:
@@ -61,7 +59,7 @@ def get_imagenet_dataset(batch_size, is_training=True, preprocess=None):
         tf.contrib.data.map_and_batch(
             map_func=decode_fn, batch_size=batch_size, num_parallel_batches=4))
     if is_training:
-        imagenet_ds = imagenet_ds.shuffle(buffer_size=10 * batch_size)
+        imagenet_ds = imagenet_ds.shuffle(buffer_size=100)
     imagenet_ds = imagenet_ds.prefetch(buffer_size=None)
     return imagenet_ds
 
@@ -87,24 +85,26 @@ def imagefolder_dataset(root,
     split_dir = os.path.join(root, split)
     labels_list = os.listdir(split_dir)
     # Iterate through folders and compose list of files and their label.
-    images = []
-    labels = []
+    samples = []
     for i, label in enumerate(labels_list):
         files = os.listdir(os.path.join(split_dir, label))
         for f in files:
             # Make sure found files are valid images.
             if f.lower().endswith(valid_extensions):
-                images.append((os.path.join(split_dir, label, f)))
-                labels.append(i)
+                samples.append((os.path.join(split_dir, label, f), i))
+    # Perform an initial shuffling of the dataset.
+    shuffle(samples)
     # Now that dataset is populated, parse it into proper tf dataset.
     decode_fn = partial(_parse_imagefolder_samples, preprocess=preprocess)
-    imagenet_ds = tf.data.Dataset.from_tensor_slices((images, labels))
+    files, labels = zip(*samples)
+    imagenet_ds = tf.data.Dataset.from_tensor_slices((list(files),
+                                                      list(labels)))
     imagenet_ds = imagenet_ds.apply(
         tf.contrib.data.map_and_batch(
             map_func=decode_fn,
             batch_size=batch_size,
             num_parallel_batches=num_workers))
     if is_training:
-        imagenet_ds = imagenet_ds.shuffle(buffer_size=10 * batch_size)
+        imagenet_ds = imagenet_ds.shuffle(buffer_size=100)
         imagenet_ds = imagenet_ds.prefetch(buffer_size=None)
     return imagenet_ds
