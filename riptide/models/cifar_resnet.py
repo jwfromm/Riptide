@@ -131,30 +131,30 @@ class CIFARResNetV1(tf.keras.Model):
 
     def __init__(self, block, layers, channels, classes=10, **kwargs):
         super(CIFARResNetV1, self).__init__(**kwargs)
-        #with tf.name_scope("CIFARResNetV1"):
-        self.features = Sequential()
-        self.features.add(
-            nn.Conv2D(
-                channels[0],
-                kernel_size=3,
-                strides=1,
-                padding="same",
-                use_bias=False))
-        self.features.add(nn.BatchNormalization())
-
-        for i, num_layer in enumerate(layers):
-            stride = 1 if i == 0 else 2
+        with tf.name_scope("CIFARResNetV1"):
+            self.features = Sequential()
             self.features.add(
-                self._make_layer(
-                    block,
-                    num_layer,
-                    channels[i + 1],
-                    stride,
-                    i + 1,
-                    in_channels=channels[i]))
-        self.features.add(nn.GlobalAveragePooling2D())
+                nn.Conv2D(
+                    channels[0],
+                    kernel_size=3,
+                    strides=1,
+                    padding="same",
+                    use_bias=False))
+            self.features.add(nn.BatchNormalization())
 
-        self.output_layer = nn.Dense(classes)
+            for i, num_layer in enumerate(layers):
+                stride = 1 if i == 0 else 2
+                self.features.add(
+                    self._make_layer(
+                        block,
+                        num_layer,
+                        channels[i + 1],
+                        stride,
+                        i + 1,
+                        in_channels=channels[i]))
+            self.features.add(nn.GlobalAveragePooling2D())
+
+            self.output_layer = nn.Dense(classes)
 
     def _make_layer(self,
                     block,

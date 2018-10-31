@@ -10,7 +10,8 @@ class DatasetTest(tf.test.TestCase):
         #preprocess = tf.keras.applications.inception_v3.preprocess_input
         preprocess = partial(
             preprocess_image, height=224, width=224, is_training=True)
-        ds = imagerecord_dataset(2, preprocess=preprocess)
+        ds = imagerecord_dataset(
+            '/data3/imagenet/tfrecords', 2, preprocess=preprocess)
         image, label = ds.make_one_shot_iterator().get_next()
         with tf.Session() as sess:
             image_out = sess.run(image)

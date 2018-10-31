@@ -4,8 +4,8 @@
 import os
 import tensorflow as tf
 #import tensorflow.keras.layers as nn
-from .. import HWGQ_layers as nn
 #from tensorflow.keras.models import Sequential
+from .. import HWGQ_layers as nn
 from riptide.utils.sequential import Sequential
 
 
@@ -183,7 +183,7 @@ class ResNetV1b(tf.keras.Model):
         self.norm_kwargs = norm_kwargs
         with tf.name_scope(self.name):
             if not deep_stem:
-                self.conv1 = nn.Conv2D(
+                self.conv1 = nn.NormalConv2D(
                     filters=64,
                     kernel_size=7,
                     strides=2,
@@ -192,7 +192,7 @@ class ResNetV1b(tf.keras.Model):
             else:
                 self.conv1 = Sequential(name='conv1')
                 self.conv1.add(
-                    nn.Conv2D(
+                    nn.NormalConv2D(
                         filters=stem_width,
                         kernel_size=3,
                         strides=2,
@@ -295,73 +295,69 @@ class ResNetV1b(tf.keras.Model):
                     last_gamma=False):
         downsample = None
         if strides != 1 or self.inplanes != planes * block.expansion:
-            downsample = Sequential(name='down%d_' % stage_index)
-            with tf.name_scope(downsample.name):
-                if avg_down:
-                    if dilation == 1:
-                        downsample.add(
-                            nn.AveragePooling2D(
-                                pool_size=strides,
-                                strides=strides,
-                                padding='same'))
-                    else:
-                        downsample.add(
-                            nn.AveragePooling2D(
-                                pool_size=1, strides=1, padding='same'))
+            downsample = Sequential(name='down%d' % stage_index)
+            if avg_down:
+                if dilation == 1:
                     downsample.add(
-                        nn.Conv2D(
-                            filters=planes * block.expansion,
-                            kernel_size=1,
-                            strides=1,
-                            use_bias=False))
-                    downsample.add(norm_layer(**self.norm_kwargs))
+                        nn.AveragePooling2D(
+                            pool_size=strides, strides=strides,
+                            padding='same'))
                 else:
                     downsample.add(
-                        nn.Conv2D(
-                            filters=planes * block.expansion,
-                            kernel_size=1,
-                            strides=strides,
-                            use_bias=False))
-                    downsample.add(norm_layer(**self.norm_kwargs))
-
-        layers = Sequential(name='layers%d_' % stage_index)
-        with tf.name_scope(layers.name):
-            if dilation in (1, 2):
-                layers.add(
-                    block(
-                        planes,
-                        strides,
-                        dilation=1,
-                        downsample=downsample,
-                        previous_dilation=dilation,
-                        norm_layer=norm_layer,
-                        norm_kwargs=self.norm_kwargs,
-                        last_gamma=last_gamma))
-            elif dilation == 4:
-                layers.add(
-                    block(
-                        planes,
-                        strides,
-                        dilation=2,
-                        downsample=downsample,
-                        previous_dilation=dilation,
-                        norm_layer=norm_layer,
-                        norm_kwargs=self.norm_kwargs,
-                        last_gamma=last_gamma))
+                        nn.AveragePooling2D(
+                            pool_size=1, strides=1, padding='same'))
+                downsample.add(
+                    nn.Conv2D(
+                        filters=planes * block.expansion,
+                        kernel_size=1,
+                        strides=1,
+                        use_bias=False))
+                downsample.add(norm_layer(**self.norm_kwargs))
             else:
-                raise RuntimeError(
-                    "=> unknown dilation size: {}".format(dilation))
+                downsample.add(
+                    nn.Conv2D(
+                        filters=planes * block.expansion,
+                        kernel_size=1,
+                        strides=strides,
+                        use_bias=False))
+                downsample.add(norm_layer(**self.norm_kwargs))
 
-            self.inplanes = planes * block.expansion
-            for i in range(1, blocks):
-                layers.add(
-                    block(
-                        planes,
-                        dilation=dilation,
-                        previous_dilation=dilation,
-                        norm_layer=norm_layer,
-                        norm_kwargs=self.norm_kwargs,
-                        last_gamma=last_gamma))
+        layers = Sequential(name='layers%d' % stage_index)
+        if dilation in (1, 2):
+            layers.add(
+                block(
+                    planes,
+                    strides,
+                    dilation=1,
+                    downsample=downsample,
+                    previous_dilation=dilation,
+                    norm_layer=norm_layer,
+                    norm_kwargs=self.norm_kwargs,
+                    last_gamma=last_gamma))
+        elif dilation == 4:
+            layers.add(
+                block(
+                    planes,
+                    strides,
+                    dilation=2,
+                    downsample=downsample,
+                    previous_dilation=dilation,
+                    norm_layer=norm_layer,
+                    norm_kwargs=self.norm_kwargs,
+                    last_gamma=last_gamma))
+        else:
+            raise RuntimeError("=> unknown dilation size: {}".format(dilation))
+
+        self.inplanes = planes * block.expansion
+        for i in range(1, blocks):
+            layers.add(
+                block(
+                    planes,
+                    dilation=dilation,
+                    previous_dilation=dilation,
+                    norm_layer=norm_layer,
+                    norm_kwargs=self.norm_kwargs,
+                    last_gamma=last_gamma))
 
         return layers
 
@@ -399,7 +395,7 @@ def resnet18_v1b(**kwargs):
         Whether to initialize the gamma of the last BatchNorm layer in each bottleneck to zero.
     """
     model = ResNetV1b(
-        BasicBlockV1b, [2, 2, 2, 2], name_prefix='resnetv1b_', **kwargs)
+        BasicBlockV1b, [2, 2, 2, 2], name_prefix='resnetv1b', **kwargs)
     return model
 
 
@@ -416,7 +412,7 @@ def resnet34_v1b(**kwargs):
         Whether to initialize the gamma of the last BatchNorm layer in each bottleneck to zero.
     """
     model = ResNetV1b(
-        BasicBlockV1b, [3, 4, 6, 3], name_prefix='resnetv1b_', **kwargs)
+        BasicBlockV1b, [3, 4, 6, 3], name_prefix='resnetv1b', **kwargs)
     return model
 
 
@@ -433,7 +429,7 @@ def resnet50_v1b(**kwargs):
         Whether to initialize the gamma of the last BatchNorm layer in each bottleneck to zero.
     """
     model = ResNetV1b(
-        BottleneckV1b, [3, 4, 6, 3], name_prefix='resnetv1b_', **kwargs)
+        BottleneckV1b, [3, 4, 6, 3], name_prefix='resnetv1b', **kwargs)
     return model
 
 
@@ -450,7 +446,7 @@ def resnet101_v1b(**kwargs):
         Whether to initialize the gamma of the last BatchNorm layer in each bottleneck to zero.
     """
     model = ResNetV1b(
-        BottleneckV1b, [3, 4, 23, 3], name_prefix='resnetv1b_', **kwargs)
+        BottleneckV1b, [3, 4, 23, 3], name_prefix='resnetv1b', **kwargs)
     return model
 
 
@@ -467,7 +463,7 @@ def resnet152_v1b(**kwargs):
         Whether to initialize the gamma of the last BatchNorm layer in each bottleneck to zero.
     """
     model = ResNetV1b(
-        BottleneckV1b, [3, 8, 36, 3], name_prefix='resnetv1b_', **kwargs)
+        BottleneckV1b, [3, 8, 36, 3], name_prefix='resnetv1b', **kwargs)
     return model
 
 

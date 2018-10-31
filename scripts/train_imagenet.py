@@ -11,11 +11,12 @@ FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_string('model_dir', '/data/jwfromm/models',
                        'Directory to save models in.')
-tf.flags.DEFINE_string('model_name', '',
-                       'Name of model to train, must be set.')
+tf.flags.DEFINE_string('model', '', 'Name of model to train, must be set.')
 tf.flags.DEFINE_string(
     'experiment', '',
     'Suffix to add to model name, should describe purpose of run.')
+tf.flags.DEFINE_string('data_path', '/data3/imagenet/tfrecords',
+                       'Directory containing tfrecords to load.')
 tf.flags.DEFINE_string('gpus', '', 'Comma seperated list of GPUS to run on.')
 tf.flags.DEFINE_integer('epochs', 120, 'Number of epochs to train.')
 tf.flags.DEFINE_integer('batch_size', 64, 'Size of each minibatch.')
@@ -45,6 +46,7 @@ def main(argv):
 
     def train_input_fn():
         ds = imagerecord_dataset(
+            FLAGS.data_path,
             FLAGS.batch_size,
             is_training=True,
             preprocess=train_preprocess,
@@ -53,16 +55,17 @@ def main(argv):
 
     def eval_input_fn():
         return imagerecord_dataset(
+            FLAGS.data_path,
             FLAGS.batch_size,
             is_training=False,
             preprocess=eval_preprocess,
             num_workers=FLAGS.workers)
 
     # Set up estimaor model function.
-    def model_fn():
+    def model_fn(features, labels, mode):
         # Generate summary for input images.
         tf.summary.image('images', features, max_outputs=4)
-        model = get_model(FLAGS.model_name)
+        model = get_model(FLAGS.model)
         logits = model(features)
         predictions = {
             'classes': tf.argmax(input=logits, axis=1),
@@ -74,7 +77,7 @@ def main(argv):
                 mode=mode, predictions=predictions)
 
         # Calcuate loss for train and eval modes.
-        cross_entropy = tf.losses.sparese_softmax_cross_entropy(
+        cross_entropy = tf.losses.sparse_softmax_cross_entropy(
             labels=labels, logits=logits)
 
         # Add weight decay.
@@ -133,11 +136,11 @@ def main(argv):
 
     # Now we're ready to configure our estimator and train.
     # Determine proper name for this model.
-    full_model_path = os.path.join(FLAGS.model_dir, "%s_%s" %
-                                   (FLAGS.model_name, FLAGS.experiment))
+    full_model_path = os.path.join(FLAGS.model_dir,
+                                   "%s_%s" % (FLAGS.model, FLAGS.experiment))
     # Figure out which GPUS to run on.
-    gpu_list = [int(g) for g in FLAGS.gpus.split(',')]
-    if len(gpu_list) > 1:
+    if len(FLAGS.gpus.split(',')) > 1:
+        gpu_list = [int(g) for g in FLAGS.gpus.split(',')]
         strategy = tf.contrib.distribute.MirroredStrategy(
             num_gpus=len(gpu_list))
     else:
@@ -151,7 +154,7 @@ def main(argv):
         model_fn=model_fn, model_dir=full_model_path, config=run_config)
     train_spec = tf.estimator.TrainSpec(
         input_fn=train_input_fn, max_steps=None)
-    eval_spec = tf.estimator.EvalSPec(input_fn=eval_input_fn)
+    eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn)
     tf.estimator.train_and_evaluate(classifier, train_spec, eval_spec)
 
 

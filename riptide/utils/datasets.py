@@ -3,12 +3,6 @@ import tensorflow as tf
 from functools import partial
 from random import shuffle
 
-FLAGS = tf.flags.FLAGS
-
-tf.flags.DEFINE_string('f', '', 'kernel')
-tf.flags.DEFINE_string('record_path', '/data3/imagenet/tfrecords',
-                       'Path to tfrecord shards.')
-
 
 def _get_shard_dataset(record_path, split='train'):
     pattern = os.path.join(record_path, split + "*")
@@ -43,7 +37,8 @@ def _decode_imagenet(proto, preprocess):
     return features, tf.cast(labels, tf.int32)
 
 
-def imagerecord_dataset(batch_size,
+def imagerecord_dataset(root,
+                        batch_size,
                         is_training=True,
                         preprocess=None,
                         num_workers=4):
@@ -51,7 +46,7 @@ def imagerecord_dataset(batch_size,
         split = 'train'
     else:
         split = 'val'
-    shard_ds = _get_shard_dataset(FLAGS.record_path, split=split)
+    shard_ds = _get_shard_dataset(root, split=split)
     imagenet_ds = shard_ds.apply(
         tf.contrib.data.parallel_interleave(
             tf.data.TFRecordDataset, cycle_length=num_workers, sloppy=True))
