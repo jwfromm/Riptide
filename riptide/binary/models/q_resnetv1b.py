@@ -3,10 +3,9 @@
 
 import os
 import tensorflow as tf
-#import tensorflow.keras.layers as nn
+from .. import binary_layers as nn
 #from tensorflow.keras.models import Sequential
-from .. import HWGQ_layers as nn
-from riptide.utils.sequential import Sequential
+from riptide.utils.sequential import forward
 
 
 class BasicBlockV1b(tf.keras.Model):
@@ -22,6 +21,7 @@ class BasicBlockV1b(tf.keras.Model):
                  previous_dilation=1,
                  norm_layer=None,
                  norm_kwargs={},
+                 data_format='channels_last',
                  **kwargs):
         super(BasicBlockV1b, self).__init__()
         self.conv1 = nn.Conv2D(
@@ -30,7 +30,8 @@ class BasicBlockV1b(tf.keras.Model):
             strides=strides,
             padding='same',
             dilation_rate=dilation,
-            use_bias=False)
+            use_bias=False,
+            data_format=data_format)
         self.bn1 = norm_layer(**norm_kwargs)
         self.relu1 = nn.Activation('relu')
         self.conv2 = nn.Conv2D(
@@ -39,7 +40,8 @@ class BasicBlockV1b(tf.keras.Model):
             strides=1,
             padding='same',
             dilation_rate=previous_dilation,
-            use_bias=False)
+            use_bias=False,
+            data_format=data_format)
         self.bn2 = norm_layer(**norm_kwargs)
         self.relu2 = nn.Activation('relu')
         self.downsample = downsample
@@ -48,18 +50,18 @@ class BasicBlockV1b(tf.keras.Model):
     def call(self, x):
         residual = x
 
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu1(out)
+        out = forward(x, self.conv1)
+        out = forward(out, self.bn1)
+        out = forward(out, self.relu1)
 
-        out = self.conv2(out)
-        out = self.bn2(out)
+        out = forward(out, self.conv2)
+        out = forward(out, self.bn2)
 
         if self.downsample is not None:
-            residual = self.downsample(x)
+            residual = forward(x, self.downsample)
 
         out = out + residual
-        out = self.relu2(out)
+        out = forward(out, self.relu2)
 
         return out
 
@@ -79,9 +81,14 @@ class BottleneckV1b(tf.keras.Model):
                  norm_layer=None,
                  norm_kwargs={},
                  last_gamma=False,
+                 data_format='channels_last',
                  **kwargs):
         super(BottleneckV1b, self).__init__()
-        self.conv1 = nn.Conv2D(filters=planes, kernel_size=1, use_bias=False)
+        self.conv1 = nn.Conv2D(
+            filters=planes,
+            kernel_size=1,
+            use_bias=False,
+            data_format=data_format)
         self.bn1 = norm_layer(**norm_kwargs)
         self.relu1 = nn.Activation('relu')
         self.conv2 = nn.Conv2D(
@@ -90,11 +97,15 @@ class BottleneckV1b(tf.keras.Model):
             strides=strides,
             padding='same',
             dilation_rate=dilation,
-            use_bias=False)
+            use_bias=False,
+            data_format=data_format)
         self.bn2 = norm_layer(**norm_kwargs)
         self.relu2 = nn.Activation('relu')
         self.conv3 = nn.Conv2D(
-            filters=planes * 4, kernel_size=1, use_bias=False)
+            filters=planes * 4,
+            kernel_size=1,
+            use_bias=False,
+            data_format=data_format)
         if not last_gamma:
             self.bn3 = norm_layer(**norm_kwargs)
         else:
@@ -107,22 +118,22 @@ class BottleneckV1b(tf.keras.Model):
     def call(self, x):
         residual = x
 
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu1(out)
+        out = forward(x, self.conv1)
+        out = forward(out, self.bn1)
+        out = forward(out, self.relu1)
 
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out = self.relu2(out)
+        out = forward(out, self.conv2)
+        out = forward(out, self.bn2)
+        out = forward(out, self.relu2)
 
-        out = self.conv3(out)
-        out = self.bn3(out)
+        out = forward(out, self.conv3)
+        out = forward(out, self.bn3)
 
         if self.downsample is not None:
-            residual = self.downsample(x)
+            residual = forward(x, self.downsample)
 
         out = out + residual
-        out = self.relu3(out)
+        out = forward(out, self.relu3)
 
         return out
 
@@ -168,6 +179,7 @@ class ResNetV1b(tf.keras.Model):
                  block,
                  layers,
                  classes=1000,
+                 data_format='channels_last',
                  dilated=False,
                  norm_layer=nn.BatchNormalization,
                  norm_kwargs={},
@@ -179,46 +191,55 @@ class ResNetV1b(tf.keras.Model):
                  name_prefix='',
                  **kwargs):
         self.inplanes = stem_width * 2 if deep_stem else 64
+        self.data_format = data_format
         super(ResNetV1b, self).__init__(name=name_prefix)
         self.norm_kwargs = norm_kwargs
         with tf.name_scope(self.name):
             if not deep_stem:
-                self.conv1 = nn.NormalConv2D(
+                self.conv1 = nn.Conv2D(
                     filters=64,
                     kernel_size=7,
                     strides=2,
                     padding='same',
-                    use_bias=False)
+                    use_bias=False,
+                    data_format=data_format)
             else:
-                self.conv1 = Sequential(name='conv1')
-                self.conv1.add(
-                    nn.NormalConv2D(
+                self.conv1 = ['conv1']
+                self.conv1.append(
+                    nn.Conv2D(
                         filters=stem_width,
                         kernel_size=3,
                         strides=2,
                         padding='same',
-                        use_bias=False))
-                self.conv1.add(norm_layer(**norm_kwargs))
-                self.conv1.add(nn.Activation('relu'))
-                self.conv1.add(
+                        use_bias=False,
+                        data_format=data_format))
+                self.conv1.append(norm_layer(**norm_kwargs))
+                self.conv1.append(nn.Activation('relu'))
+                self.conv1.append(
                     nn.Conv2D(
                         filters=stem_width,
                         kernel_size=3,
                         strides=1,
                         padding='same',
-                        use_bias=False))
-                self.conv1.add(norm_layer(**norm_kwargs))
-                self.conv1.add(nn.Activation('relu'))
-                self.conv1.add(
+                        use_bias=False,
+                        data_format=data_format))
+                self.conv1.append(norm_layer(**norm_kwargs))
+                self.conv1.append(nn.Activation('relu'))
+                self.conv1.append(
                     nn.Conv2D(
                         filters=stem_width * 2,
                         kernel_size=3,
                         strides=1,
                         padding='same',
-                        use_bias=False))
+                        use_bias=False,
+                        data_format=data_format))
             self.bn1 = norm_layer(**norm_kwargs)
             self.relu = nn.Activation('relu')
-            self.maxpool = nn.MaxPool2D(pool_size=3, strides=2, padding='same')
+            self.maxpool = nn.MaxPool2D(
+                pool_size=3,
+                strides=2,
+                padding='same',
+                data_format=data_format)
             self.layer1 = self._make_layer(
                 1,
                 block,
@@ -226,7 +247,8 @@ class ResNetV1b(tf.keras.Model):
                 layers[0],
                 avg_down=avg_down,
                 norm_layer=norm_layer,
-                last_gamma=last_gamma)
+                last_gamma=last_gamma,
+                data_format=data_format)
             self.layer2 = self._make_layer(
                 2,
                 block,
@@ -235,7 +257,8 @@ class ResNetV1b(tf.keras.Model):
                 strides=2,
                 avg_down=avg_down,
                 norm_layer=norm_layer,
-                last_gamma=last_gamma)
+                last_gamma=last_gamma,
+                data_format=data_format)
             if dilated:
                 self.layer3 = self._make_layer(
                     3,
@@ -246,7 +269,8 @@ class ResNetV1b(tf.keras.Model):
                     dilation=2,
                     avg_down=avg_down,
                     norm_layer=norm_layer,
-                    last_gamma=last_gamma)
+                    last_gamma=last_gamma,
+                    data_format=data_format)
                 self.layer4 = self._make_layer(
                     4,
                     block,
@@ -256,7 +280,8 @@ class ResNetV1b(tf.keras.Model):
                     dilation=4,
                     avg_down=avg_down,
                     norm_layer=norm_layer,
-                    last_gamma=last_gamma)
+                    last_gamma=last_gamma,
+                    data_format=data_format)
             else:
                 self.layer3 = self._make_layer(
                     3,
@@ -266,7 +291,8 @@ class ResNetV1b(tf.keras.Model):
                     strides=2,
                     avg_down=avg_down,
                     norm_layer=norm_layer,
-                    last_gamma=last_gamma)
+                    last_gamma=last_gamma,
+                    data_format=data_format)
                 self.layer4 = self._make_layer(
                     4,
                     block,
@@ -275,8 +301,9 @@ class ResNetV1b(tf.keras.Model):
                     strides=2,
                     avg_down=avg_down,
                     norm_layer=norm_layer,
-                    last_gamma=last_gamma)
-            self.avgpool = nn.GlobalAveragePooling2D()
+                    last_gamma=last_gamma,
+                    data_format=data_format)
+            self.avgpool = nn.GlobalAveragePooling2D(data_format=data_format)
             self.flat = nn.Flatten()
             self.drop = None
             if final_drop > 0.0:
@@ -292,39 +319,47 @@ class ResNetV1b(tf.keras.Model):
                     dilation=1,
                     avg_down=False,
                     norm_layer=None,
-                    last_gamma=False):
+                    last_gamma=False,
+                    data_format='channels_last'):
         downsample = None
         if strides != 1 or self.inplanes != planes * block.expansion:
-            downsample = Sequential(name='down%d' % stage_index)
+            downsample = ['down%d' % stage_index]
             if avg_down:
                 if dilation == 1:
-                    downsample.add(
+                    downsample.append(
                         nn.AveragePooling2D(
-                            pool_size=strides, strides=strides,
-                            padding='same'))
+                            pool_size=strides,
+                            strides=strides,
+                            padding='same',
+                            data_format=data_format))
                 else:
-                    downsample.add(
+                    downsample.append(
                         nn.AveragePooling2D(
-                            pool_size=1, strides=1, padding='same'))
-                downsample.add(
+                            pool_size=1,
+                            strides=1,
+                            padding='same',
+                            data_format=data_format))
+                downsample.append(
                     nn.Conv2D(
                         filters=planes * block.expansion,
                         kernel_size=1,
                         strides=1,
-                        use_bias=False))
-                downsample.add(norm_layer(**self.norm_kwargs))
+                        use_bias=False,
+                        data_format=data_format))
+                downsample.append(norm_layer(**self.norm_kwargs))
             else:
-                downsample.add(
+                downsample.append(
                     nn.Conv2D(
                         filters=planes * block.expansion,
                         kernel_size=1,
                         strides=strides,
-                        use_bias=False))
-                downsample.add(norm_layer(**self.norm_kwargs))
+                        use_bias=False,
+                        data_format=data_format))
+                downsample.append(norm_layer(**self.norm_kwargs))
 
-        layers = Sequential(name='layers%d' % stage_index)
+        layers = ['layers%d' % stage_index]
         if dilation in (1, 2):
-            layers.add(
+            layers.append(
                 block(
                     planes,
                     strides,
@@ -333,9 +368,10 @@ class ResNetV1b(tf.keras.Model):
                     previous_dilation=dilation,
                     norm_layer=norm_layer,
                     norm_kwargs=self.norm_kwargs,
-                    last_gamma=last_gamma))
+                    last_gamma=last_gamma,
+                    data_format=data_format))
         elif dilation == 4:
-            layers.add(
+            layers.append(
                 block(
                     planes,
                     strides,
@@ -344,39 +380,43 @@ class ResNetV1b(tf.keras.Model):
                     previous_dilation=dilation,
                     norm_layer=norm_layer,
                     norm_kwargs=self.norm_kwargs,
-                    last_gamma=last_gamma))
+                    last_gamma=last_gamma,
+                    data_format=data_format))
         else:
             raise RuntimeError("=> unknown dilation size: {}".format(dilation))
 
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
-            layers.add(
+            layers.append(
                 block(
                     planes,
                     dilation=dilation,
                     previous_dilation=dilation,
                     norm_layer=norm_layer,
                     norm_kwargs=self.norm_kwargs,
-                    last_gamma=last_gamma))
+                    last_gamma=last_gamma,
+                    data_format=data_format))
 
         return layers
 
     def call(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
+        if self.data_format == 'channels_first':
+            x = tf.transpose(x, [0, 3, 1, 2])
+        x = forward(x, self.conv1)
+        x = forward(x, self.bn1)
+        x = forward(x, self.relu)
+        x = forward(x, self.maxpool)
 
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        x = forward(x, self.layer1)
+        x = forward(x, self.layer2)
+        x = forward(x, self.layer3)
+        x = forward(x, self.layer4)
 
-        x = self.avgpool(x)
-        x = self.flat(x)
+        x = forward(x, self.avgpool)
+        x = forward(x, self.flat)
         if self.drop is not None:
-            x = self.drop(x)
-        x = self.fc(x)
+            x = forward(x, self.drop)
+        x = forward(x, self.fc)
 
         return x
 

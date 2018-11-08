@@ -4,18 +4,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         cmake \
         vim \
         unzip \
-        libboost-python-dev \
         software-properties-common \
         rsync \
         x11-apps \
         graphviz \
+        libboost-python-dev \
         libtinfo-dev \
-        python-setuptools \
         libopenblas-dev \
         llvm-dev \
         yapf \
         && \
     rm -rf /var/lib/apt/lists/*
+
+# Need to redefine python to proper version.
+RUN ln -s /usr/bin/pip3 /usr/bin/pip
+RUN rm /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python
 
 # Install TVM dependencies
 WORKDIR /root
@@ -47,7 +50,7 @@ ENV PYTHONPATH /root/tvm/topi/python:$PYTHONPATH
 ENV PYTHONPATH /root/tvm/nnvm/python:$PYTHONPATH
 ENV PYTHONPATH /root/tvm/vta/python:$PYTHONPATH
 WORKDIR /root/tvm
-RUN make cython2
+RUN make cython3
 
 # Set up gotools
 WORKDIR /tmp
@@ -62,10 +65,10 @@ ENV PATH $PATH:/root/go/bin
 
 RUN pip --no-cache-dir install \
         Pillow \
-        ipykernel \
         mixpanel \
         graphviz \
         pydot \
+        ipython \
         pydot_ng \
         pyyaml \
         yapf \
@@ -83,18 +86,16 @@ RUN pip --no-cache-dir install \
         tensorboard \
         tensorflow-hub \
         tensorflow-probability \
-        tensorflow-data-validation \
-        tensorflow-transform \
-        tensorflow-model-analysis \
+        #tensorflow-data-validation \
+        #tensorflow-transform \
+        #tensorflow-model-analysis \
         jupyter \
         jupyterlab \
         keras \
         h5py \
         xgboost \
         psutil \
-        mxnet \
-        && \
-    python -m ipykernel.kernelspec
+        mxnet
 
 # Set up some convenience stuff
 COPY .vim /root/.vim

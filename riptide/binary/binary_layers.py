@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.python.framework import common_shapes
-from tensorflow.keras.layers import Activation, BatchNormalization, GlobalAveragePooling2D, Flatten
+from tensorflow.keras.layers import GlobalAveragePooling2D, Flatten, Activation, PReLU, BatchNormalization
 """Quantization scope, defines the modification of operator"""
 
 
@@ -19,9 +19,10 @@ class Config(object):
     weightQ : function: name->function
         Maps name to quantize function.
 
-    clusters : Tensor
+    bits : Tensor
         When using HWGQ binarization, these are the possible values
-        that can be used in approximation.
+        that can be used in approximation. For other binarization schemes,
+        this should be the number of bits to use.
 
     Example
     -------
@@ -34,11 +35,10 @@ class Config(object):
     """
     current = None
 
-    def __init__(self, actQ=None, weightQ=None, activation=None,
-                 clusters=None):
+    def __init__(self, actQ=None, weightQ=None, activation=None, bits=None):
         self.actQ = actQ if actQ else lambda x: x
         self.weightQ = weightQ if weightQ else lambda x: x
-        self.clusters = clusters
+        self.bits = bits
 
     def __enter__(self):
         self._old_manager = Config.current
@@ -55,14 +55,16 @@ class Conv2D(keras.layers.Conv2D):
         self.scope = Config.current
         self.actQ = self.scope.actQ
         self.weightQ = self.scope.weightQ
-        self.clusters = self.scope.clusters
+        self.bits = self.scope.bits
 
     def call(self, inputs):
-        if self.clusters is not None:
-            inputs = self.actQ(inputs, self.clusters)
-        else:
-            inputs = self.actQ(inputs)
-        kernel = self.weightQ(self.kernel)
+        with tf.name_scope("actQ"):
+            if self.bits is not None:
+                inputs = self.actQ(inputs, self.bits)
+            else:
+                inputs = self.actQ(inputs)
+        with tf.name_scope("weightQ"):
+            kernel = self.weightQ(self.kernel)
         outputs = self._convolution_op(inputs, kernel)
 
         if self.use_bias:
@@ -84,15 +86,17 @@ class Dense(keras.layers.Dense):
         self.scope = Config.current
         self.actQ = self.scope.actQ
         self.weightQ = self.scope.weightQ
-        self.clusters = self.scope.clusters
+        self.bits = self.scope.bits
 
     def call(self, inputs):
         inputs = tf.convert_to_tensor(inputs, dtype=self.dtype)
-        if self.clusters is not None:
-            inputs = self.actQ(inputs, self.clusters)
-        else:
-            inputs = self.actQ(inputs)
-        kernel = self.weightQ(self.kernel)
+        with tf.name_scope("actQ"):
+            if self.bits is not None:
+                inputs = self.actQ(inputs, self.bits)
+            else:
+                inputs = self.actQ(inputs)
+        with tf.name_scope("weightQ"):
+            kernel = self.weightQ(self.kernel)
         rank = common_shapes.rank(inputs)
         if rank > 2:
             # Broadcasting is required for the inputs.
@@ -109,6 +113,20 @@ class Dense(keras.layers.Dense):
         if self.activation is not None:
             return self.activation(outputs)  # pylint: disable=not-callable
         return outputs
+
+
+class Scalu(keras.layers.Layer):
+    def __init__(self):
+        super(Scalu, self).__init__()
+        
+    def build(self, input_shape):
+        self.scale = self.add_weight('scale', shape=[1],
+                                     initializer='ones',
+                                     trainable=True)
+
+    def call(self, input):
+        return input * self.scale
+
 
 
 NormalConv2D = keras.layers.Conv2D

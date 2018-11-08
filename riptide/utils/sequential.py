@@ -1,6 +1,33 @@
 import tensorflow as tf
 
 
+def _forward_core(x, layers):
+    for l in layers:
+        if isinstance(l, list):
+            x = forward_layer_list(x, l)
+        else:
+            x = l(x)
+            act_name = "%s_activations" % tf.contrib.framework.get_name_scope()
+            tf.summary.histogram(act_name, x)
+    return x
+
+
+def forward_layer_list(x, layers):
+    if isinstance(layers[0], str):
+        name = layers.pop(0)
+        with tf.name_scope(name):
+            return _forward_core(x, layers)
+    else:
+        return _forward_core(x, layers)
+
+
+def forward(x, layer):
+    if isinstance(layer, list):
+        return forward_layer_list(x, layer)
+    else:
+        return layer(x)    
+    
+
 class Sequential(tf.keras.Model):
     def __init__(self, layers=None, name=None):
         super(Sequential, self).__init__()
@@ -19,4 +46,4 @@ class Sequential(tf.keras.Model):
                     x = self.call(l)
                 else:
                     x = l(x)
-        return x
+            return x

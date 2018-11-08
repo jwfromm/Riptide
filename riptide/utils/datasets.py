@@ -2,6 +2,7 @@ import os
 import tensorflow as tf
 from functools import partial
 from random import shuffle
+from tensorflow.contrib.data.python.ops import threadpool
 
 
 def _get_shard_dataset(record_path, split='train'):
@@ -50,16 +51,23 @@ def imagerecord_dataset(root,
     imagenet_ds = shard_ds.apply(
         tf.contrib.data.parallel_interleave(
             tf.data.TFRecordDataset, cycle_length=num_workers, sloppy=True))
-
-    decode_fn = partial(_decode_imagenet, preprocess=preprocess)
-    imagenet_ds = imagenet_ds.prefetch(buffer_size=None)
+    # Prefetch a batch at a time to smooth time taken to load for shuffling and preprocessing.
+    imagenet_ds = imagenet_ds.prefetch(buffer_size=batch_size)
     if is_training:
         imagenet_ds = imagenet_ds.shuffle(buffer_size=100)
+    decode_fn = partial(_decode_imagenet, preprocess=preprocess)
     imagenet_ds = imagenet_ds.apply(
         tf.contrib.data.map_and_batch(
             map_func=decode_fn,
             batch_size=batch_size,
             num_parallel_batches=num_workers))
+    imagenet_ds = imagenet_ds.prefetch(buffer_size=tf.contrib.data.AUTOTUNE)
+    # Set up extra threadpool resources
+    imagenet_ds = threadpool.override_threadpool(
+        dataset,
+        threadpool.PrivateThreadPool(
+            num_workers,
+            display_name='input_pipeline_thread_pool'))
     return imagenet_ds
 
 

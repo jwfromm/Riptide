@@ -2,7 +2,7 @@ import os
 import tensorflow as tf
 import tensorflow.keras.layers as nn
 #from tensorflow.keras.models import Sequential
-from riptide.utils.sequential import Sequential
+from riptide.utils.sequential import forward_layer_list
 
 
 def _conv3x3(channels, stride):
@@ -31,29 +31,29 @@ class CIFARBasicBlockV1(tf.keras.Model):
 
     def __init__(self, channels, stride, downsample=False, **kwargs):
         super(CIFARBasicBlockV1, self).__init__(**kwargs)
-        self.body = Sequential()
+        self.body = []
         if downsample:
-            self.downsample = Sequential()
+            self.downsample = []
         else:
             self.downsample = None
 
-        self.body.add(_conv3x3(channels, stride))
-        self.body.add(nn.BatchNormalization())
-        self.body.add(nn.Activation('relu'))
-        self.body.add(_conv3x3(channels, 1))
-        self.body.add(nn.BatchNormalization())
+        self.body.append(_conv3x3(channels, stride))
+        self.body.append(nn.BatchNormalization())
+        self.body.append(nn.Activation('relu'))
+        self.body.append(_conv3x3(channels, 1))
+        self.body.append(nn.BatchNormalization())
         if self.downsample is not None:
-            self.downsample.add(
+            self.downsample.append(
                 nn.Conv2D(
                     channels, kernel_size=1, strides=stride, use_bias=False))
-            self.downsample.add(nn.BatchNormalization())
+            self.downsample.append(nn.BatchNormalization())
 
     def call(self, x):
         residual = x
 
-        x = self.body(x)
+        x = forward_layer_list(x, self.body)
         if self.downsample is not None:
-            residual = self.downsample(residual)
+            residual = forward_layer_list(residual, self.downsample)
 
         x = residual + x
 
@@ -80,20 +80,20 @@ class CIFARBasicBlockV2(tf.keras.Model):
 
     def __init__(self, channels, stride, downsample=False, **kwargs):
         super(CIFARBasicBlockV2, self).__init__(**kwargs)
-        self.body = Sequential()
+        self.body = []
         if downsample:
-            self.downsample = Sequential()
+            self.downsample = []
         else:
             self.downsample = None
 
-        self.body.add(nn.BatchNormalization)
-        self.body.add(nn.Activation('relu'))
-        self.body.add(_conv3x3(channels, stride))
-        self.body.add(nn.BatchNormalization)
-        self.body.add(nn.Activation('relu'))
-        self.body.add(_conv3x3(channels, 1))
+        self.body.append(nn.BatchNormalization)
+        self.body.append(nn.Activation('relu'))
+        self.body.append(_conv3x3(channels, stride))
+        self.body.append(nn.BatchNormalization)
+        self.body.append(nn.Activation('relu'))
+        self.body.append(_conv3x3(channels, 1))
         if self.downsample is not None:
-            self.downsample.add(
+            self.downsample.append(
                 nn.Conv2D(
                     channels,
                     kernel_size=1,
@@ -104,10 +104,10 @@ class CIFARBasicBlockV2(tf.keras.Model):
     def call(self, x):
         residual = x
 
-        x = self.body(x)
+        x = forward_layer_list(x, self.body)
 
         if self.downsample is not None:
-            residual = self.downsample(residual)
+            residual = forward_layer_list(residual, self.downsample)
 
         return x + residual
 
@@ -132,19 +132,19 @@ class CIFARResNetV1(tf.keras.Model):
     def __init__(self, block, layers, channels, classes=10, **kwargs):
         super(CIFARResNetV1, self).__init__(**kwargs)
         with tf.name_scope("CIFARResNetV1"):
-            self.features = Sequential()
-            self.features.add(
+            self.features = []
+            self.features.append(
                 nn.Conv2D(
                     channels[0],
                     kernel_size=3,
                     strides=1,
                     padding="same",
                     use_bias=False))
-            self.features.add(nn.BatchNormalization())
+            self.features.append(nn.BatchNormalization())
 
             for i, num_layer in enumerate(layers):
                 stride = 1 if i == 0 else 2
-                self.features.add(
+                self.features.append(
                     self._make_layer(
                         block,
                         num_layer,
@@ -152,7 +152,7 @@ class CIFARResNetV1(tf.keras.Model):
                         stride,
                         i + 1,
                         in_channels=channels[i]))
-            self.features.add(nn.GlobalAveragePooling2D())
+            self.features.append(nn.GlobalAveragePooling2D())
 
             self.output_layer = nn.Dense(classes)
 
@@ -163,14 +163,14 @@ class CIFARResNetV1(tf.keras.Model):
                     stride,
                     stage_index,
                     in_channels=0):
-        layer = Sequential()
-        layer.add(block(channels, stride, channels != in_channels))
+        layer = []
+        layer.append(block(channels, stride, channels != in_channels))
         for _ in range(layers - 1):
-            layer.add(block(channels, 1, False))
+            layer.append(block(channels, 1, False))
         return layer
 
     def call(self, x):
-        x = self.features(x)
+        x = forward_layer_list(x, self.features)
         x = self.output_layer(x)
 
         return x
@@ -197,13 +197,13 @@ class CIFARResNetV2(tf.keras.Model):
         super(CIFARResNetV2, self).__init__(**kwargs)
         assert len(layers) == len(channels) - 1
 
-        self.features = Sequential()
-        self.features.add(nn.BatchNormalization(scale=False, center=False))
+        self.features = []
+        self.features.append(nn.BatchNormalization(scale=False, center=False))
 
         in_channels = channels[0]
         for i, num_layer in enumerate(layers):
             stride = 1 if i == 0 else 2
-            self.features.add(
+            self.features.append(
                 self._make_layer(
                     block,
                     num_layer,
@@ -212,10 +212,10 @@ class CIFARResNetV2(tf.keras.Model):
                     i + 1,
                     in_channels=in_channels))
             in_channels = channels[i + 1]
-        self.features.add(nn.BatchNormalization())
-        self.features.add(nn.Activation('relu'))
-        self.features.add(nn.GlobalAveragePooling2D())
-        self.features.add(nn.Flatten())
+        self.features.append(nn.BatchNormalization())
+        self.features.append(nn.Activation('relu'))
+        self.features.append(nn.GlobalAveragePooling2D())
+        self.features.append(nn.Flatten())
 
         self.output_layer = nn.Dense(classes)
 
@@ -226,14 +226,14 @@ class CIFARResNetV2(tf.keras.Model):
                     stride,
                     stage_index,
                     in_channels=0):
-        layer = Sequential()
-        layer.add(block(channels, stride, channels != in_channels))
+        layer = []
+        layer.append(block(channels, stride, channels != in_channels))
         for _ in range(layers - 1):
-            layer.add(block(channels, 1, False))
+            layer.append(block(channels, 1, False))
         return layer
 
     def call(self, x):
-        x = self.features(x)
+        x = forward_layer_list(x, self.features)
         x = self.output_layer(x)
 
         return x
