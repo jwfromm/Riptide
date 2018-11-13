@@ -7,19 +7,25 @@ def log2(x):
     return tf.log(x)/tf.log(2.0)
 
 
+@tf.custom_gradient
 def AP2(x):
-    x = tf.clip_by_value(x, 1e-7, 1)
-    return 2**(tf.round(log2(tf.abs(x))))
+    x = tf.clip_by_value(x, 1e-7, 1.0)
+    y = 2**(tf.round(log2(tf.abs(x))))
+    
+    def grad_fn(dy):
+        return [dy]
+    
+    return y, grad_fn
 
 
 def get_quantize_bits(x):
     if len(x.shape) > 1:
-        mean = tf.reduce_mean(tf.abs(tf.reshape(x, [x.shape[0], -1])), axis=-1)
+        mean = tf.reduce_mean(tf.abs(tf.reshape(x, [-1, x.shape[-1]])), axis=0)
     else:
         mean = tf.reduce_mean(tf.abs(x))
     # Fix dimensions of mean
     for i in range(len(x.shape) - 1):
-        mean = tf.expand_dims(mean, axis=-1)
+        mean = tf.expand_dims(mean, axis=0)
     bits = tf.cast(x >= 0, tf.float32)
     bits = (2 * bits) - 1
     return AP2(mean), bits

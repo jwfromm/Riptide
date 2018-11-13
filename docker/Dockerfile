@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 # Need to redefine python to proper version.
-RUN ln -s /usr/bin/pip3 /usr/bin/pip
 RUN rm /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python
 
 # Install TVM dependencies

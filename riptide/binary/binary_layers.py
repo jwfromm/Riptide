@@ -1,7 +1,8 @@
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.python.framework import common_shapes
-from tensorflow.keras.layers import GlobalAveragePooling2D, Flatten, Activation, PReLU, BatchNormalization
+from riptide.binary.binary_funcs import *
+from tensorflow.keras.layers import GlobalAveragePooling2D, Flatten, Activation, PReLU, BatchNormalization, MaxPool2D
 """Quantization scope, defines the modification of operator"""
 
 
@@ -63,8 +64,10 @@ class Conv2D(keras.layers.Conv2D):
                 inputs = self.actQ(inputs, self.bits)
             else:
                 inputs = self.actQ(inputs)
+            tf.summary.histogram(tf.contrib.framework.get_name_scope(), inputs)
         with tf.name_scope("weightQ"):
             kernel = self.weightQ(self.kernel)
+            tf.summary.histogram(tf.contrib.framework.get_name_scope(), kernel)
         outputs = self._convolution_op(inputs, kernel)
 
         if self.use_bias:
@@ -95,8 +98,10 @@ class Dense(keras.layers.Dense):
                 inputs = self.actQ(inputs, self.bits)
             else:
                 inputs = self.actQ(inputs)
+            tf.summary.histogram(tf.contrib.framework.get_name_scope(), inputs)
         with tf.name_scope("weightQ"):
             kernel = self.weightQ(self.kernel)
+            tf.summary.histogram(tf.contrib.framework.get_name_scope(), kernel)
         rank = common_shapes.rank(inputs)
         if rank > 2:
             # Broadcasting is required for the inputs.
@@ -118,15 +123,13 @@ class Dense(keras.layers.Dense):
 class Scalu(keras.layers.Layer):
     def __init__(self):
         super(Scalu, self).__init__()
-        
+
     def build(self, input_shape):
-        self.scale = self.add_weight('scale', shape=[1],
-                                     initializer='ones',
-                                     trainable=True)
+        self.scale = self.add_weight(
+            'scale', shape=[1], initializer='ones', trainable=True)
 
     def call(self, input):
         return input * self.scale
-
 
 
 NormalConv2D = keras.layers.Conv2D

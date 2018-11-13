@@ -13,6 +13,9 @@ bazel-*
 # timeline profiling tools
 timeline.ctf.json
 
+# deb files, might be used for docker
+*.deb
+
 # pkl files
 *.pkl
 

@@ -1,7 +1,7 @@
-from models import cifar_resnet
-from models import resnetv1b as resnet
-from binary.models import q_cifar_resnet
-from binary.models import q_resnetv1b as q_resnet
+from .models import cifar_resnet
+from .models import resnetv1b as resnet
+from .binary.models import q_cifar_resnet
+from .binary.models import q_resnetv1b as q_resnet
 
 
 def get_model(name, **kwargs):

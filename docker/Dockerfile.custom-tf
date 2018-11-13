@@ -36,11 +36,17 @@ RUN pip3 install --upgrade \
 RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN ln -s /usr/bin/pip3 /usr/bin/pip
 
-RUN apt-get update && \
-        apt-get install nvinfer-runtime-trt-repo-ubuntu1804-5.0.0-rc-cuda10.0 && \
-        apt-get update && \
-        apt-get install libnvinfer5 && \
-        apt-get install libnvinfer-dev
+WORKDIR /tmp
+COPY nv-tensorrt-repo-ubuntu1804-cuda10.0-trt5.0.2.6-ga-20181009_1-1_amd64.deb .
+RUN dpkg -i nv-tensorrt-repo-ubuntu1804-cuda10.0-trt5.0.2.6-ga-20181009_1-1_amd64.deb
+RUN apt-key add /var/nv-tensorrt-repo-cuda10.0-trt5.0.2.6-ga-20181009/7fa2af80.pub
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        tensorrt \
+        python3-libnvinfer \
+        uff-converter-tf \
+        && \
+    rm -rf /var/lib/apt/lists/*
+WORKDIR /root
 
 # Link NCCL libray and header where the build script expects them.
 RUN mkdir /usr/local/cuda-10.0/lib &&  \
@@ -102,7 +108,7 @@ ENV CI_BUILD_PYTHON python
 ENV LD_LIBRARY_PATH /usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH
 ENV TF_NEED_CUDA 1
 ENV TF_NEED_TENSORRT 1
-ENV TF_CUDA_COMPUTE_CAPABILITIES=5.2,6.1,7.0
+ENV TF_CUDA_COMPUTE_CAPABILITIES=5.2,6.1,7.0,7.5
 ENV TF_CUDA_VERSION=10.0
 ENV TF_CUDNN_VERSION=7
 ENV TF_ENABLE_XLA=1

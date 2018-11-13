@@ -4,6 +4,8 @@ import tensorflow as tf
 from functools import partial
 from riptide.get_models import get_model
 from official.resnet import resnet_run_loop
+from riptide.binary.binary_layers import Config
+from riptide.binary.binary_funcs import XQuantize, DQuantize
 from riptide.utils.datasets import imagerecord_dataset
 from riptide.utils.thread_helper import setup_gpu_threadpool
 from slim.preprocessing.inception_preprocessing import preprocess_image
@@ -26,6 +28,7 @@ tf.flags.DEFINE_integer('image_size', 224,
 tf.flags.DEFINE_float('learning_rate', .128, 'Starting learning rate.')
 tf.flags.DEFINE_float('wd', 1e-3, 'Weight decay loss coefficient.')
 tf.flags.DEFINE_float('momentum', 0.9, 'Momentum used for optimizer.')
+tf.flags.DEFINE_float('bits', 2.0, 'Number of activation bits to use.')
 
 
 def main(argv):
@@ -66,7 +69,12 @@ def main(argv):
     def model_fn(features, labels, mode):
         # Generate summary for input images.
         tf.summary.image('images', features, max_outputs=4)
-        model = get_model(FLAGS.model)
+        actQ = DQuantize
+        weightQ = XQuantize
+        config = Config(actQ=actQ, weightQ=weightQ, bits=FLAGS.bits)
+        with config:
+            model = get_model(FLAGS.model)
+
         logits = model(features)
         predictions = {
             'classes': tf.argmax(input=logits, axis=1),
@@ -95,6 +103,9 @@ def main(argv):
         # Log model losses.
         tf.summary.scalar('l2_loss', l2_loss)
         tf.summary.scalar('cross_entropy', cross_entropy)
+        # Also log histogram of variables.
+        for v in tf.trainable_variables():
+            tf.summary.histogram(v.name, v)
 
         # Compute training metrics.
         accuracy = tf.metrics.accuracy(labels, predictions['classes'])
