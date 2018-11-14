@@ -173,7 +173,7 @@ class ResNetV1b(tf.keras.Model):
         self.norm_kwargs = norm_kwargs
         with tf.name_scope(self.name):
             if not deep_stem:
-                self.conv1 = nn.NormalConv2D(
+                self.conv1 = nn.Conv2DBatchNorm(
                     filters=64,
                     kernel_size=7,
                     strides=2,
@@ -183,7 +183,7 @@ class ResNetV1b(tf.keras.Model):
             else:
                 self.conv1 = ['conv1']
                 self.conv1.append(
-                    nn.NormalConv2D(
+                    nn.Conv2DBatchNorm(
                         filters=stem_width,
                         kernel_size=3,
                         strides=2,

@@ -7,7 +7,7 @@ from riptide.utils.sequential import forward_layer_list
 
 def _conv3x3(channels, stride, normal=False):
     if normal:
-        return nn.NormalConv2D(
+        return nn.Conv2DBatchNorm(
             channels,
             kernel_size=3,
             strides=stride,
@@ -140,7 +140,7 @@ class CIFARResNetV1(tf.keras.Model):
         with tf.name_scope("CIFARResNetV1"):
             self.features = []
             self.features.append(
-                nn.NormalConv2D(
+                nn.Conv2DBatchNorm(
                     channels[0],
                     kernel_size=3,
                     strides=1,
@@ -160,7 +160,7 @@ class CIFARResNetV1(tf.keras.Model):
             self.features.append(nn.GlobalAveragePooling2D())
 
             self.output_layer = []
-            self.output_layer.append(nn.Dense(classes))
+            self.output_layer.append(nn.Dense(classes, use_bias=False))
             self.output_layer.append(nn.Scalu())
 
     def _make_layer(self,
@@ -225,7 +225,7 @@ class CIFARResNetV2(tf.keras.Model):
         self.features.append(nn.Flatten())
 
         self.output_layer = []
-        self.output_layer.append(nn.Dense(classes))
+        self.output_layer.append(nn.Dense(classes, use_bias=False))
         self.output_layer.append(nn.Scalu())
 
     def _make_layer(self,

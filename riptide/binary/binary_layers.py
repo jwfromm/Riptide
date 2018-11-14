@@ -36,10 +36,11 @@ class Config(object):
     """
     current = None
 
-    def __init__(self, actQ=None, weightQ=None, activation=None, bits=None):
+    def __init__(self, actQ=None, weightQ=None, activation=None, bits=None, use_bn=False):
         self.actQ = actQ if actQ else lambda x: x
         self.weightQ = weightQ if weightQ else lambda x: x
         self.bits = bits
+        self.use_bn = use_bn
 
     def __enter__(self):
         self._old_manager = Config.current
@@ -57,6 +58,9 @@ class Conv2D(keras.layers.Conv2D):
         self.actQ = self.scope.actQ
         self.weightQ = self.scope.weightQ
         self.bits = self.scope.bits
+        self.use_bn = self.scope.use_bn
+        if self.use_bn:
+            self.bn = BatchNormalization()
 
     def call(self, inputs):
         with tf.name_scope("actQ"):
@@ -80,8 +84,41 @@ class Conv2D(keras.layers.Conv2D):
 
         if self.activation is not None:
             return self.activation(outputs)
+        
+        if self.use_bn:
+            outputs = self.bn(outputs)
+            
         return outputs
 
+
+# Same as default keras conv2d but has batchnorm build in with Config.
+class Conv2DBatchNorm(keras.layers.Conv2D):
+    def __init__(self, *args, **kwargs):
+        super(Conv2D, self).__init__(*args, **kwargs)
+        self.scope = Config.current
+        self.use_bn = self.scope.use_bn
+        if self.use_bn:
+            self.bn = BatchNormalization()
+
+    def call(self, inputs):
+        outputs = self._convolution_op(inputs, kernel)
+
+        if self.use_bias:
+            if self.data_format == 'channels_first':
+                outputs = tf.nn.bias_add(
+                    outputs, self.bias, data_format='NCHW')
+            else:
+                outputs = tf.nn.bias_add(
+                    outputs, self.bias, data_format='NHWC')
+
+        if self.activation is not None:
+            return self.activation(outputs)
+        
+        if self.use_bn:
+            outputs = self.bn(outputs)
+            
+        return outputs
+    
 
 class Dense(keras.layers.Dense):
     def __init__(self, *args, **kwargs):
@@ -90,6 +127,9 @@ class Dense(keras.layers.Dense):
         self.actQ = self.scope.actQ
         self.weightQ = self.scope.weightQ
         self.bits = self.scope.bits
+        self.use_bn = self.scope.use_bn
+        if self.use_bn:
+            self.bn = BatchNormalization()
 
     def call(self, inputs):
         inputs = tf.convert_to_tensor(inputs, dtype=self.dtype)
@@ -117,6 +157,8 @@ class Dense(keras.layers.Dense):
             outputs = tf.nn.bias_add(outputs, self.bias)
         if self.activation is not None:
             return self.activation(outputs)  # pylint: disable=not-callable
+        if self.use_bn:
+            outputs = self.bn(outputs)
         return outputs
 
 
