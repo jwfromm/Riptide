@@ -4,17 +4,18 @@ from .bit_approximations import load_clusters, load_bits
 
 
 def log2(x):
-    return tf.log(x)/tf.log(2.0)
+    return tf.log(x) / tf.log(2.0)
 
 
 @tf.custom_gradient
 def AP2(x):
-    x = tf.clip_by_value(x, 1e-7, 1.0)
+    #x = tf.clip_by_value(x, 1e-7, 1.0)
+    # Positive ap2 might be fine
     y = 2**(tf.round(log2(tf.abs(x))))
-    
+
     def grad_fn(dy):
         return [dy]
-    
+
     return y, grad_fn
 
 
@@ -37,7 +38,12 @@ def XQuantize(x):
     y = mean * bits
 
     def grad_fn(dy):
-        dx = dy * tf.cast(tf.abs(x) <= 1, tf.float32)
+        #grad_mask_greater = tf.cast(tf.abs(x) >= 1, tf.float32)
+        #grad_mask_lesser = tf.cast(tf.abs(x) <= 1, tf.float32)
+        # Let big values leak a little
+        #grad_mask = 0.1 * grad_mask_greater + grad_mask_lesser
+        grad_mask = tf.cast(tf.abs(x) <= 1, tf.float32)
+        dx = grad_mask * dy
         return [dx]
 
     return y, grad_fn
@@ -45,10 +51,18 @@ def XQuantize(x):
 
 @tf.custom_gradient
 def Quantize(x):
-    y = tf.sign(x)
+    bits = tf.cast(x >= 0, tf.float32)
+    bits = (2 * bits) - 1
+
+    y = bits
 
     def grad_fn(dy):
-        dx = dy * tf.cast(tf.abs(x) <= 1, tf.float32)
+        #grad_mask_greater = tf.cast(tf.abs(x) >= 1, tf.float32)
+        #grad_mask_lesser = tf.cast(tf.abs(x) <= 1, tf.float32)
+        # Let big values leak a little
+        #grad_mask = 0.1 * grad_mask_greater + grad_mask_lesser
+        grad_mask = tf.cast(tf.abs(x) <= 1, tf.float32)
+        dx = grad_mask * dy
         return [dx]
 
     return y, grad_fn

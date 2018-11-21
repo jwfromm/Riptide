@@ -56,11 +56,11 @@ WORKDIR /tmp
 RUN wget https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
 RUN tar -C /usr/local -xzf go1.11.1.linux-amd64.tar.gz
 ENV PATH $PATH:/usr/local/go/bin
-WORKDIR /root
 
+WORKDIR /
 # Install buildifier
 RUN go get github.com/bazelbuild/buildtools/buildifier
-ENV PATH $PATH:/root/go/bin
+ENV PATH $PATH:/go/bin
 
 RUN pip --no-cache-dir install \
         Pillow \
@@ -103,7 +103,6 @@ COPY .gitconfig /root
 
 ENV DISPLAY 0
 
-WORKDIR /workspace
 WORKDIR /root
 # set utf-8 encoding, weird that we have to do this haha
 ENV LC_ALL "C.UTF-8"
@@ -115,4 +114,4 @@ ENV PYTHONPATH /root/Riptide:$PYTHONPATH
 # Make root bazel workspace
 RUN touch /root/WORKSPACE
 
-RUN chmod -R a+w /workspace
+RUN chmod -R a+w /root

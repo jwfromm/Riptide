@@ -7,7 +7,7 @@ def _forward_core(x, layers):
             x = forward_layer_list(x, l)
         else:
             x = l(x)
-            act_name = "%s_activations" % tf.contrib.framework.get_name_scope()
+            act_name = "%sactivations" % tf.contrib.framework.get_name_scope()
             tf.summary.histogram(act_name, x)
     return x
 
@@ -25,8 +25,8 @@ def forward(x, layer):
     if isinstance(layer, list):
         return forward_layer_list(x, layer)
     else:
-        return layer(x)    
-    
+        return layer(x)
+
 
 class Sequential(tf.keras.Model):
     def __init__(self, layers=None, name=None):

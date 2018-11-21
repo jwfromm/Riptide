@@ -56,6 +56,7 @@ class CIFARBasicBlockV1(tf.keras.Model):
             self.downsample.append(
                 nn.Conv2D(
                     channels, kernel_size=1, strides=stride, use_bias=False))
+        self.add = nn.QAdd()
 
     def call(self, x):
         residual = x
@@ -64,7 +65,7 @@ class CIFARBasicBlockV1(tf.keras.Model):
         if self.downsample is not None:
             residual = forward_layer_list(residual, self.downsample)
 
-        x = residual + x
+        x = self.add([residual, x])
 
         return x
 
@@ -106,6 +107,7 @@ class CIFARBasicBlockV2(tf.keras.Model):
             self.downsample.append(
                 nn.Conv2D(
                     channels, kernel_size=1, strides=stride, use_bias=False))
+        self.add = nn.QAdd()
 
     def call(self, x):
         residual = x
@@ -115,7 +117,7 @@ class CIFARBasicBlockV2(tf.keras.Model):
         if self.downsample is not None:
             residual = forward_layer_list(residual, self.downsample)
 
-        return x + residual
+        return self.add([x, residual])
 
 
 class CIFARResNetV1(tf.keras.Model):
