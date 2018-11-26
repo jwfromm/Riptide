@@ -475,7 +475,7 @@ class ShiftNormalization(Layer):
         extra_scale = 2.0  # Additional range squishing coefficient.
         if self.pure_shiftnorm:
             approximate_mean = AP2(
-                1.0 / (extra_scale * _broadcast(mean) + tf.sqrt(self.epsilon)))
+                1.0 / (extra_scale * _broadcast(mean) + self.epsilon))
             outputs = inputs * approximate_mean
         else:
             approximate_std = AP2(
