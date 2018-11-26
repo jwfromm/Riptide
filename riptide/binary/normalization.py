@@ -102,6 +102,7 @@ class ShiftNormalization(Layer):
   """
 
     def __init__(self,
+                 config,
                  axis=-1,
                  momentum=0.99,
                  epsilon=1e-3,
@@ -123,6 +124,8 @@ class ShiftNormalization(Layer):
                  **kwargs):
         super(ShiftNormalization, self).__init__(
             name=name, trainable=trainable, **kwargs)
+        self.scope = config
+        self.pure_shiftnorm = self.scope.pure_shiftnorm
         if isinstance(axis, list):
             self.axis = axis[:]
         else:
@@ -413,8 +416,13 @@ class ShiftNormalization(Layer):
             # Some of the computations here are not necessary when training==False
             # but not a constant. However, this makes the code simpler.
             keep_dims = len(self.axis) > 1
-            mean, variance = nn.moments(
-                tf.abs(inputs), reduction_axes, keep_dims=keep_dims)
+            if self.pure_shiftnorm:
+                # only look at positive numbers since others get binarized away.
+                mean, variance = nn.moments(
+                    tf.abs(inputs), reduction_axes, keep_dims=keep_dims)
+            else:
+                mean, variance = nn.moments(
+                    inputs, reduction_axes, keep_dims=keep_dims)
 
             moving_mean = self.moving_mean
             moving_variance = self.moving_variance
@@ -463,15 +471,19 @@ class ShiftNormalization(Layer):
         #outputs = nn.batch_normalization(inputs, _broadcast(mean),
         #                                 _broadcast(variance), offset, scale,
         #                                 self.epsilon)
-        # Manual implementation of batchnorm
-        #outputs = (inputs - _broadcast(mean)) / (
-        #    tf.sqrt(2.0 * _broadcast(variance) + self.epsilon))
-        # Try taking out mean
-        with tf.name_scope("AP2_batch_mean"):
-            extra_scale = 2.0  # Additional range squishing coefficient.
+
+        extra_scale = 2.0  # Additional range squishing coefficient.
+        if self.pure_shiftnorm:
             approximate_mean = AP2(
-                1.0 / (extra_scale * _broadcast(mean) + self.epsilon))
-        outputs = inputs * approximate_mean
+                1.0 / (extra_scale * _broadcast(mean) + tf.sqrt(self.epsilon)))
+            outputs = inputs * approximate_mean
+        else:
+            approximate_std = AP2(
+                1.0 /
+                (extra_scale * tf.sqrt(_broadcast(variance) + self.epsilon)))
+            outputs = (inputs - _broadcast(
+                tf.fake_quant_with_min_max_args(mean, -1, 1, num_bits=8))) * (
+                    approximate_std)
 
         if scale:
             outputs = scale * outputs

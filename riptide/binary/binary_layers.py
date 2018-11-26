@@ -29,6 +29,10 @@ class Config(object):
     use_bn: bool
         Whether to apply batch normalization at the end of the layer or not.
 
+    pure_shiftnorm: bool
+        If true, shift normalization only scales and has no centering. Truly
+        only shifting.
+
     use_qadd: bool
         If true, do quantization before addition in Qadd layers.
 
@@ -50,12 +54,14 @@ class Config(object):
                  use_bn=False,
                  use_maxpool=True,
                  use_act=False,
+                 pure_shiftnorm=True,
                  use_qadd=False):
         self.actQ = actQ if actQ else lambda x: x
         self.weightQ = weightQ if weightQ else lambda x: x
         self.bits = bits
         self.use_bn = use_bn
         self.use_act = use_act
+        self.pure_shiftnorm = pure_shiftnorm
         self.use_qadd = use_qadd
         self.use_maxpool = use_maxpool
 
@@ -205,7 +211,7 @@ def BatchNormalization(*args, **kwargs):
         return keras.layers.BatchNormalization(*args, **kwargs)
     else:
         #return lambda x, training: x
-        return ShiftNormalization(*args, **kwargs)
+        return ShiftNormalization(scope, *args, **kwargs)
 
 
 def MaxPool2D(*args, **kwargs):

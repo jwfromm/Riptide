@@ -11,7 +11,8 @@ def log2(x):
 def AP2(x):
     #x = tf.clip_by_value(x, 1e-7, 1.0)
     # Positive ap2 might be fine
-    y = 2**(tf.round(log2(tf.abs(x))))
+    with tf.name_scope("AP2"):
+        y = 2**(tf.round(log2(tf.abs(x))))
 
     def grad_fn(dy):
         return [dy]
