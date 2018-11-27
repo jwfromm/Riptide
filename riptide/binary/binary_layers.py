@@ -51,9 +51,9 @@ class Config(object):
                  actQ=None,
                  weightQ=None,
                  bits=None,
-                 use_bn=False,
+                 use_bn=True,
                  use_maxpool=True,
-                 use_act=False,
+                 use_act=True,
                  pure_shiftnorm=True,
                  use_qadd=False):
         self.actQ = actQ if actQ else lambda x: x

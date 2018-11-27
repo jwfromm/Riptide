@@ -3,9 +3,10 @@ import multiprocessing
 import tensorflow as tf
 from functools import partial
 from riptide.get_models import get_model
-from official.resnet import resnet_run_loop
 from riptide.utils.datasets import imagerecord_dataset
 from riptide.utils.thread_helper import setup_gpu_threadpool
+from riptide.utils.learning_rate import learning_rate_with_smooth_decay
+from riptide.binary.binary_layers import Config
 from slim.preprocessing.inception_preprocessing import preprocess_image
 
 FLAGS = tf.flags.FLAGS
@@ -66,7 +67,9 @@ def main(argv):
     def model_fn(features, labels, mode):
         # Generate summary for input images.
         tf.summary.image('images', features, max_outputs=4)
-        model = get_model(FLAGS.model)
+        config = Config()
+        with config:
+            model = get_model(FLAGS.model)
         logits = model(features)
         predictions = {
             'classes': tf.argmax(input=logits, axis=1),
@@ -113,14 +116,15 @@ def main(argv):
 
         # Otherwise, we must be doing training.
         global_step = tf.train.get_or_create_global_step()
-        learning_rate_fn = resnet_run_loop.learning_rate_with_decay(
+        learning_rate_fn = learning_rate_with_smooth_decay(
             batch_size=FLAGS.batch_size,
             batch_denom=256,
-            num_images=1281167,
-            boundary_epochs=[30, 60, 80, 90],
-            decay_rates=[1, 0.1, 0.01, 0.001, 1e-4],
+            decay_epochs=20,
+            decay_rate=0.1,
+            base_lr=FLAGS.learning_rate,
             warmup=True,
-            base_lr=FLAGS.learning_rate)
+            staircase=False,
+            num_images=1281167)
         learning_rate = learning_rate_fn(global_step)
         # Track learning rate.
         tf.summary.scalar('learning_rate', learning_rate)

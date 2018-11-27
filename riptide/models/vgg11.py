@@ -5,8 +5,8 @@ from riptide.binary import binary_layers as nn
 from riptide.utils.sequential import forward_layer_list
 
 
-class VGGCifar(tf.keras.Model):
-    def __init__(self):
+class VGG11(tf.keras.Model):
+    def __init__(self, classes=1000):
         super(VGGCifar, self).__init__()
 
         # Set up configurable maxpool or stride dimension reduction.
@@ -92,7 +92,7 @@ class VGGCifar(tf.keras.Model):
         self.pool5 = nn.MaxPool2D(pool_size=2, strides=2)
 
         self.avgpool = nn.GlobalAveragePooling2D()
-        self.classifier = nn.Dense(10, use_bias=False)
+        self.classifier = nn.Dense(classes, use_bias=False)
 
     def call(self, inputs, training=None):
         with tf.name_scope('unbinarized'):
