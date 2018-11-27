@@ -27,7 +27,7 @@ class vgg11(tf.keras.Model):
         self.pool1 = nn.NormalMaxPool2D(pool_size=2, strides=2)
         self.scale = nn.Scale(0.5)
 
-        self.conv2 = nn.Conv2D(
+        self.conv2 = nn.BinaryConv2D(
             filters=128,
             kernel_size=3,
             strides=reduce_stride,
@@ -37,7 +37,7 @@ class vgg11(tf.keras.Model):
         self.bn2 = nn.BatchNormalization()
         self.pool2 = nn.MaxPool2D(pool_size=2, strides=2)
 
-        self.conv3 = nn.Conv2D(
+        self.conv3 = nn.BinaryConv2D(
             filters=256,
             kernel_size=3,
             strides=1,
@@ -45,7 +45,7 @@ class vgg11(tf.keras.Model):
             activation='relu',
             use_bias=False)
         self.bn3 = nn.BatchNormalization()
-        self.conv4 = nn.Conv2D(
+        self.conv4 = nn.BinaryConv2D(
             filters=256,
             kernel_size=3,
             strides=reduce_stride,
@@ -55,7 +55,7 @@ class vgg11(tf.keras.Model):
         self.bn4 = nn.BatchNormalization()
         self.pool3 = nn.MaxPool2D(pool_size=2, strides=2)
 
-        self.conv5 = nn.Conv2D(
+        self.conv5 = nn.BinaryConv2D(
             filters=512,
             kernel_size=3,
             strides=1,
@@ -63,7 +63,7 @@ class vgg11(tf.keras.Model):
             activation='relu',
             use_bias=False)
         self.bn5 = nn.BatchNormalization()
-        self.conv6 = nn.Conv2D(
+        self.conv6 = nn.BinaryConv2D(
             filters=512,
             kernel_size=3,
             strides=reduce_stride,
@@ -73,7 +73,7 @@ class vgg11(tf.keras.Model):
         self.bn6 = nn.BatchNormalization()
         self.pool4 = nn.MaxPool2D(pool_size=2, strides=2)
 
-        self.conv7 = nn.Conv2D(
+        self.conv7 = nn.BinaryConv2D(
             filters=512,
             kernel_size=3,
             strides=1,
@@ -81,7 +81,7 @@ class vgg11(tf.keras.Model):
             activation='relu',
             use_bias=False)
         self.bn7 = nn.BatchNormalization()
-        self.conv8 = nn.Conv2D(
+        self.conv8 = nn.BinaryConv2D(
             filters=512,
             kernel_size=3,
             strides=reduce_stride,
@@ -92,7 +92,7 @@ class vgg11(tf.keras.Model):
         self.pool5 = nn.MaxPool2D(pool_size=2, strides=2)
 
         self.avgpool = nn.GlobalAveragePooling2D()
-        self.classifier = nn.Dense(classes, use_bias=False)
+        self.classifier = nn.BinaryDense(classes, use_bias=False)
 
     def call(self, inputs, training=None):
         with tf.name_scope('unbinarized'):

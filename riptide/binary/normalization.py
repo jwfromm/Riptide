@@ -482,7 +482,7 @@ class ShiftNormalization(Layer):
                 1.0 /
                 (extra_scale * tf.sqrt(_broadcast(variance) + self.epsilon)))
             outputs = (inputs - _broadcast(
-                tf.fake_quant_with_min_max_args(mean, -1, 1, num_bits=8))) * (
+                tf.fake_quant_with_min_max_args(mean, -6, 6, num_bits=8))) * (
                     approximate_std)
 
         if scale:

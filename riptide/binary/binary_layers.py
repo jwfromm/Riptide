@@ -74,9 +74,9 @@ class Config(object):
         Config.current = self._old_manager
 
 
-class Conv2D(keras.layers.Conv2D):
+class BinaryConv2D(keras.layers.Conv2D):
     def __init__(self, *args, **kwargs):
-        super(Conv2D, self).__init__(*args, **kwargs)
+        super(BinaryConv2D, self).__init__(*args, **kwargs)
         self.scope = Config.current
         self.actQ = self.scope.actQ
         self.weightQ = self.scope.weightQ
@@ -111,9 +111,9 @@ class Conv2D(keras.layers.Conv2D):
         return outputs
 
 
-class Dense(keras.layers.Dense):
+class BinaryDense(keras.layers.Dense):
     def __init__(self, *args, **kwargs):
-        super(Dense, self).__init__(*args, **kwargs)
+        super(BinaryDense, self).__init__(*args, **kwargs)
         self.scope = Config.current
         self.actQ = self.scope.actQ
         self.weightQ = self.scope.weightQ
