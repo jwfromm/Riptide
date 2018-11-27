@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 import tensorflow.keras as keras
 from .bit_approximations import load_clusters, load_bits
@@ -18,6 +19,30 @@ def AP2(x):
         return [dy]
 
     return y, grad_fn
+
+
+def get_numpy(sess, x):
+    with sess.as_default():
+        output = x.eval()
+    return output
+
+
+def get_shiftnorm_ap2(sess, layer, pure_shiftnorm=True):
+    mean = layer.weights[0].value()
+    extra_scale = layer.extra_scale
+    epsilon = layer.epsilon
+    if pure_shiftnorm:
+        approximate_mean = AP2((extra_scale * mean + epsilon))
+        with sess.as_default():
+            return approximate_mean.eval()
+
+    else:
+        variance = layer.weights[1].value()
+        approximate_std = AP2((extra_scale * tf.sqrt(variance + epsilon)))
+        approximate_mean = tf.fake_quant_with_min_max_args(
+            mean, -6, 6, num_bits=8)
+        with sess.as_default():
+            return approximate_std.eval(), approximate_mean.eval()
 
 
 def get_quantize_bits(x):
