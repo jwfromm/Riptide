@@ -5,9 +5,9 @@ from riptide.binary import binary_layers as nn
 from riptide.utils.sequential import forward_layer_list
 
 
-class VGG11(tf.keras.Model):
+class vgg11(tf.keras.Model):
     def __init__(self, classes=1000):
-        super(VGGCifar, self).__init__()
+        super(vgg11, self).__init__()
 
         # Set up configurable maxpool or stride dimension reduction.
         self.scope = nn.Config.current

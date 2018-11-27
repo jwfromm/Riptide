@@ -19,8 +19,8 @@ def get_model(name, **kwargs):
         'resnet152': resnet.resnet152_v1b,
         'cifarnet20': cifar_resnet.cifar_resnet20_v1,
         'q_cifarnet20': q_cifar_resnet.cifar_resnet20_v1,
-        'vgg11': vgg11.VGG11,
-        'q_vgg11': vgg11.VGG11,
+        'vgg11': vgg11.vgg11,
+        'q_vgg11': vgg11.vgg11,
     }
     name = name.lower()
     if name not in models:

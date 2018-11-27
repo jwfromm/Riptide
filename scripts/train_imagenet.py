@@ -67,7 +67,8 @@ def main(argv):
     def model_fn(features, labels, mode):
         # Generate summary for input images.
         tf.summary.image('images', features, max_outputs=4)
-        config = Config()
+        use_maxpool = False
+        config = Config(use_maxpool=use_maxpool)
         with config:
             model = get_model(FLAGS.model)
         logits = model(features)
