@@ -134,7 +134,9 @@ def main(argv):
             learning_rate=learning_rate,
             momentum=FLAGS.momentum,
             use_nesterov=True)
-        train_op = optimizer.minimize(loss=loss, global_step=global_step)
+        update_ops = model.get_updates_for(features)
+        with tf.control_dependencies(update_ops):
+            train_op = optimizer.minimize(loss=loss, global_step=global_step)
         # Keep track of training accuracy.
         tf.summary.scalar('train_accuracy', accuracy[1])
         tf.summary.scalar('train_accuracy_top_5', accuracy_top_5[1])
