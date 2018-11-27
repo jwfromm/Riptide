@@ -22,8 +22,10 @@ def AP2(x):
 
 
 def get_numpy(sess, x):
+    if not isinstance(x, list):
+        x = [x]
     with sess.as_default():
-        output = x.eval()
+        output = sess.run(x)
     return output
 
 
