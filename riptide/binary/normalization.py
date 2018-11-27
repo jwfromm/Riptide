@@ -64,6 +64,8 @@ class ShiftNormalization(Layer):
         When the next layer is linear (also e.g. `nn.relu`),
         this can be disabled since the scaling
         will be done by the next layer.
+    extra_scale:
+        Added multiplier for AP2.
     beta_initializer: Initializer for the beta weight.
     gamma_initializer: Initializer for the gamma weight.
     moving_mean_initializer: Initializer for the moving mean.
@@ -108,6 +110,7 @@ class ShiftNormalization(Layer):
                  epsilon=1e-3,
                  center=False,
                  scale=False,
+                 extra_scale=2.0,
                  beta_initializer='zeros',
                  gamma_initializer='ones',
                  moving_mean_initializer='zeros',
@@ -134,6 +137,7 @@ class ShiftNormalization(Layer):
         self.epsilon = epsilon
         self.center = center
         self.scale = scale
+        self.extra_scale = extra_scale
         self.beta_initializer = initializers.get(beta_initializer)
         self.gamma_initializer = initializers.get(gamma_initializer)
         self.moving_mean_initializer = initializers.get(
@@ -472,15 +476,13 @@ class ShiftNormalization(Layer):
         #                                 _broadcast(variance), offset, scale,
         #                                 self.epsilon)
 
-        extra_scale = 2.0  # Additional range squishing coefficient.
         if self.pure_shiftnorm:
             approximate_mean = AP2(
-                1.0 / (extra_scale * _broadcast(mean) + self.epsilon))
+                1.0 / (self.extra_scale * _broadcast(mean) + self.epsilon))
             outputs = inputs * approximate_mean
         else:
-            approximate_std = AP2(
-                1.0 /
-                (extra_scale * tf.sqrt(_broadcast(variance) + self.epsilon)))
+            approximate_std = AP2(1.0 / (self.extra_scale * tf.sqrt(
+                _broadcast(variance) + self.epsilon)))
             outputs = (inputs - _broadcast(
                 tf.fake_quant_with_min_max_args(mean, -6, 6, num_bits=8))) * (
                     approximate_std)
