@@ -156,7 +156,7 @@ def main(argv):
         learning_rate_fn = learning_rate_with_smooth_decay(
             batch_size=FLAGS.batch_size,
             batch_denom=256,
-            decay_epochs=20,
+            decay_epochs=30,
             decay_rate=0.1,
             base_lr=FLAGS.learning_rate,
             warmup=True,

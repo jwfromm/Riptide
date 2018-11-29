@@ -103,22 +103,29 @@ class vgg11(tf.keras.Model):
         x = self.scale(x)
         # Continue with binary layers.
         x = self.conv2(x)
-        x = self.bn2(x, training=training)
+        x = self.bn2(
+            x, conv_weights=self.conv2.weights[0].value(), training=training)
         x = self.pool2(x)
         x = self.conv3(x)
-        x = self.bn3(x, training=training)
+        x = self.bn3(
+            x, conv_weights=self.conv3.weights[0].value(), training=training)
         x = self.conv4(x)
-        x = self.bn4(x, training=training)
+        x = self.bn4(
+            x, conv_weights=self.conv4.weights[0].value(), training=training)
         x = self.pool3(x)
         x = self.conv5(x)
-        x = self.bn5(x, training=training)
+        x = self.bn5(
+            x, conv_weights=self.conv5.weights[0].value(), training=training)
         x = self.conv6(x)
-        x = self.bn6(x, training=training)
+        x = self.bn6(
+            x, conv_weights=self.conv6.weights[0].value(), training=training)
         x = self.pool4(x)
         x = self.conv7(x)
-        x = self.bn7(x, training=training)
+        x = self.bn7(
+            x, conv_weights=self.conv7.weights[0].value(), training=training)
         x = self.conv8(x)
-        x = self.bn8(x, training=training)
+        x = self.bn8(
+            x, conv_weights=self.conv8.weights[0].value(), training=training)
         x = self.pool5(x)
         x = self.avgpool(x)
         #with tf.name_scope('unbinarized'):
