@@ -6,7 +6,7 @@ from riptide.get_models import get_model
 from riptide.utils.datasets import imagerecord_dataset
 from riptide.utils.thread_helper import setup_gpu_threadpool
 from riptide.utils.learning_rate import learning_rate_with_smooth_decay
-from riptide.binary.binary_layers import Config
+from riptide.binary.binary_layers import Config, DQuantize, XQuantize
 from slim.preprocessing.inception_preprocessing import preprocess_image
 
 FLAGS = tf.flags.FLAGS
@@ -25,8 +25,11 @@ tf.flags.DEFINE_integer('batch_size', 64, 'Size of each minibatch.')
 tf.flags.DEFINE_integer('image_size', 224,
                         'Height and Width of processed images.')
 tf.flags.DEFINE_float('learning_rate', .128, 'Starting learning rate.')
-tf.flags.DEFINE_float('wd', 1e-3, 'Weight decay loss coefficient.')
+tf.flags.DEFINE_float('wd', 1e-4, 'Weight decay loss coefficient.')
 tf.flags.DEFINE_float('momentum', 0.9, 'Momentum used for optimizer.')
+tf.flags.DEFINE_bool('binary', False, 'Use a binary network.')
+tf.flags.DEFINE_float('bits', 2.0,
+                      'Number of activation bits to use for binary model.')
 
 
 def main(argv):
@@ -67,11 +70,42 @@ def main(argv):
     def model_fn(features, labels, mode):
         # Generate summary for input images.
         tf.summary.image('images', features, max_outputs=4)
-        use_maxpool = False
-        config = Config(use_maxpool=use_maxpool)
+        if FLAGS.binary:
+            actQ = DQuantize
+            weightQ = XQuantize
+            bits = FLAGS.bits
+            use_act = False
+            use_bn = False
+            use_maxpool = False
+            pure_shiftnorm = True
+            normal = False
+        else:
+            actQ = None
+            weightQ = None
+            bits = None
+            use_act = True
+            use_bn = True
+            use_maxpool = False
+            pure_shiftnorm = False
+            normal = True
+        config = Config(
+            actQ=actQ,
+            weightQ=weightQ,
+            bits=bits,
+            use_act=use_act,
+            use_bn=use_bn,
+            use_maxpool=use_maxpool,
+            pure_shiftnorm=pure_shiftnorm)
         with config:
             model = get_model(FLAGS.model)
-        logits = model(features)
+
+        # Get proper mode for batchnorm and dropout, must be python bool.
+        if mode == tf.estimator.ModeKeys.TRAIN:
+            is_training = True
+        else:
+            is_training = False
+
+        logits = model(features, training=is_training)
         predictions = {
             'classes': tf.argmax(input=logits, axis=1),
             'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
@@ -88,7 +122,9 @@ def main(argv):
         # Add weight decay.
         # Simple filter function to prevent decay of batchnorm parameters.
         def exclude_batch_norm(name):
-            return 'batch_normalization' not in name
+            return (('batch_normalization' not in name)
+                    and ('shift_normalization' not in name)
+                    and (('unbinarized' in name) or normal))
 
         l2_loss = FLAGS.wd * tf.add_n([
             tf.nn.l2_loss(tf.cast(v, tf.float32))

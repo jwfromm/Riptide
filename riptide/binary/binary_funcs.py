@@ -26,6 +26,8 @@ def get_numpy(sess, x):
         x = [x]
     with sess.as_default():
         output = sess.run(x)
+    if len(output) == 1:
+        output = output[0]
     return output
 
 

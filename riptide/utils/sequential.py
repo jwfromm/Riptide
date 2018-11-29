@@ -7,8 +7,6 @@ def _forward_core(x, layers):
             x = forward_layer_list(x, l)
         else:
             x = l(x)
-            act_name = "%sactivations" % tf.contrib.framework.get_name_scope()
-            tf.summary.histogram(act_name, x)
     return x
 
 
