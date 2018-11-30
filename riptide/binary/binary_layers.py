@@ -693,7 +693,7 @@ class ShiftNormalization(Layer):
             total_shift_bits = tf.reshape(total_shift_bits, [-1])
             # Now quantize each channel of mean appropriately.
             quantized_means = FixedPointQuantize(mean, mean_scale,
-                                                 total_shift_bits)
+                                                 total_shift_bits, True)
 
             outputs = (inputs - _broadcast(quantized_means)) * (
                 approximate_std)

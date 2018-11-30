@@ -31,12 +31,16 @@ def get_numpy(sess, x):
     return output
 
 
-def get_shiftnorm_ap2(sess, layer, pure_shiftnorm=True, conv_weights=None):
+def get_shiftnorm_ap2(sess,
+                      layer,
+                      pure_shiftnorm=False,
+                      conv_weights=None,
+                      rescale=False):
     mean = layer.weights[0].value()
     extra_scale = layer.extra_scale
     epsilon = layer.epsilon
     if pure_shiftnorm:
-        approximate_mean = AP2((extra_scale * mean + epsilon))
+        approximate_mean = AP2(1.0 / (extra_scale * mean + epsilon))
         with sess.as_default():
             return approximate_mean.eval(), None
 
@@ -49,10 +53,11 @@ def get_shiftnorm_ap2(sess, layer, pure_shiftnorm=True, conv_weights=None):
             weight_scale_ap2, _ = get_quantize_bits(conv_weights)
         else:
             weight_scale_ap2 = 1.0
-        weight_scale_bits = log2(1.0 / weight_scale_ap2)
-        shiftnorm_scale_bits = log2(1.0 / approximate_std)
-        total_shift_bits = weight_scale_bits + shifnorm_scale_bits + layer.bits
-        quantized_mean = FixedPointQuantize(mean, mean_scale, total_shift_bits)
+        weight_scale_bits = -log2(weight_scale_ap2)
+        shiftnorm_scale_bits = -log2(approximate_std)
+        total_shift_bits = weight_scale_bits + shiftnorm_scale_bits + layer.bits
+        quantized_mean = FixedPointQuantize(mean, mean_scale, total_shift_bits,
+                                            rescale)
         with sess.as_default():
             return approximate_std.eval(), quantized_mean.eval()
 
@@ -73,7 +78,7 @@ def get_quantize_bits(x):
 # Fixed point quantize operator that supports per_channel scales and bitwidth.
 # Assumes min and max value are both scale.
 @tf.custom_gradient
-def FixedPointQuantize(inputs, scale, bits, rescale=True):
+def FixedPointQuantize(inputs, scale, bits, rescale):
     # Start by clipping values between specified range.
     y = tf.clip_by_value(inputs, -scale, scale)
     # Determine floating point value of each bit.
@@ -81,9 +86,8 @@ def FixedPointQuantize(inputs, scale, bits, rescale=True):
     # Quantize tensor.
     y = y / bit_value
     y = tf.round(y)
-    # Readjust to floating point
-    if rescale:
-        y = y * bit_value
+    # Readjust to floating point if specified.
+    y = tf.cond(rescale, true_fn=lambda: y * bit_value, false_fn=lambda: y)
 
     def grad_fn(dy):
         grad_mask = tf.cast(tf.abs(inputs) <= scale, tf.float32)
