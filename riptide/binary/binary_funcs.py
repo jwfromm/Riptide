@@ -88,7 +88,7 @@ def FixedPointQuantize(inputs, scale, bits, rescale=True):
     def grad_fn(dy):
         grad_mask = tf.cast(tf.abs(inputs) <= scale, tf.float32)
         dx = grad_mask * dy
-        return [dx]
+        return [dx, None, None]
 
     return y, grad_fn
 
