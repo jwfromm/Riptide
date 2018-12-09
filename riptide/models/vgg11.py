@@ -93,6 +93,7 @@ class vgg11(tf.keras.Model):
 
         self.avgpool = nn.GlobalAveragePooling2D()
         self.classifier = nn.BinaryDense(classes, use_bias=False)
+        self.scalu = nn.Scalu()
 
     def call(self, inputs, training=None):
         with tf.name_scope('unbinarized'):
@@ -130,6 +131,7 @@ class vgg11(tf.keras.Model):
         x = self.avgpool(x)
         #with tf.name_scope('unbinarized'):
         x = self.classifier(x)
+        x = self.scalu(x)
         tf.summary.histogram('output', x)
 
         return x

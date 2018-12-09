@@ -31,8 +31,7 @@ def get_numpy(sess, x):
     return output
 
 
-def get_shiftnorm_ap2(sess,
-                      layer,
+def get_shiftnorm_ap2(layer,
                       pure_shiftnorm=False,
                       conv_weights=None,
                       rescale=False):
@@ -41,8 +40,7 @@ def get_shiftnorm_ap2(sess,
     epsilon = layer.epsilon
     if pure_shiftnorm:
         approximate_mean = AP2(1.0 / (extra_scale * mean + epsilon))
-        with sess.as_default():
-            return approximate_mean.eval(), None
+        return approximate_mean, None
 
     else:
         variance = layer.weights[1].value()
@@ -58,8 +56,7 @@ def get_shiftnorm_ap2(sess,
         total_shift_bits = weight_scale_bits + shiftnorm_scale_bits + layer.bits
         quantized_mean = FixedPointQuantize(mean, mean_scale, total_shift_bits,
                                             rescale)
-        with sess.as_default():
-            return approximate_std.eval(), quantized_mean.eval()
+        return approximate_std, quantized_mean
 
 
 def get_quantize_bits(x):
@@ -79,20 +76,21 @@ def get_quantize_bits(x):
 # Assumes min and max value are both scale.
 @tf.custom_gradient
 def FixedPointQuantize(inputs, scale, bits, rescale):
-    # Start by clipping values between specified range.
-    y = tf.clip_by_value(inputs, -scale, scale)
-    # Determine floating point value of each bit.
-    bit_value = scale / (2.0**bits - 1.0)
-    # Quantize tensor.
-    y = y / bit_value
-    y = tf.round(y)
-    # Readjust to floating point if specified.
-    y = tf.cond(rescale, true_fn=lambda: y * bit_value, false_fn=lambda: y)
+    with tf.name_scope("FPQ"):
+        # Start by clipping values between specified range.
+        y = tf.clip_by_value(inputs, -scale, scale)
+        # Determine floating point value of each bit.
+        bit_value = scale / (2.0**bits - 1.0)
+        # Quantize tensor.
+        y = y / bit_value
+        y = tf.round(y)
+        # Readjust to floating point if specified.
+        y = tf.cond(rescale, true_fn=lambda: y * bit_value, false_fn=lambda: y)
 
     def grad_fn(dy):
         grad_mask = tf.cast(tf.abs(inputs) <= scale, tf.float32)
         dx = grad_mask * dy
-        return [dx, None, None]
+        return [dx, None, None, None]
 
     return y, grad_fn
 
@@ -108,7 +106,12 @@ def XQuantize(x):
         # Let big values leak a little
         #grad_mask = 0.1 * grad_mask_greater + grad_mask_lesser
         grad_mask = tf.cast(tf.abs(x) <= 1, tf.float32)
-        dx = grad_mask * dy
+        # Allow weights to move off away from 1 if needed.
+        leaky_grad_mask = tf.cast(
+            tf.logical_or(
+                tf.logical_and(x > 1, dy < 0), tf.logical_and(x < -1, dy > 0)),
+            tf.float32)
+        dx = grad_mask * dy + 0.1 * leaky_grad_mask * dy
         return [dx]
 
     return y, grad_fn

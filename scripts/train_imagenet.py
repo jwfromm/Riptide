@@ -77,7 +77,7 @@ def main(argv):
             use_act = False
             use_bn = False
             use_maxpool = False
-            pure_shiftnorm = True
+            pure_shiftnorm = False
             normal = False
         else:
             actQ = None
@@ -124,6 +124,7 @@ def main(argv):
         def exclude_batch_norm(name):
             return (('batch_normalization' not in name)
                     and ('shift_normalization' not in name)
+                    and ('scalu' not in name)
                     and (('unbinarized' in name) or normal))
 
         l2_loss = FLAGS.wd * tf.add_n([

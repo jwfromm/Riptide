@@ -226,7 +226,6 @@ def BatchNormalization(*args, **kwargs):
     if scope.use_bn:
         return SpecialBatchNormalization(*args, **kwargs)
     else:
-        #return lambda x, training: x
         return ShiftNormalization(*args, **kwargs)
 
 
@@ -306,7 +305,7 @@ class ShiftNormalization(Layer):
                  epsilon=1e-3,
                  center=False,
                  scale=False,
-                 extra_scale=2.0,
+                 extra_scale=1.5,
                  beta_initializer='zeros',
                  gamma_initializer='ones',
                  moving_mean_initializer='zeros',
@@ -676,8 +675,8 @@ class ShiftNormalization(Layer):
             outputs = inputs * approximate_mean
         else:
             # Compute number of bits to shift.
-            approximate_std = AP2(1.0 / (self.extra_scale * tf.sqrt(
-                _broadcast(variance) + self.epsilon)))
+            approximate_std = AP2(
+                1.0 / (self.extra_scale * tf.sqrt(variance + self.epsilon)))
             # Quantizing the mean is a little tricky, start by determining
             # the quantization scale.
             mean_scale = 1.0 + (1 / (2**self.bits - 1))
@@ -687,16 +686,15 @@ class ShiftNormalization(Layer):
                 weight_scale_ap2, _ = get_quantize_bits(conv_weights)
             else:
                 weight_scale_ap2 = 1.0
-            weight_scale_bits = log2(1.0 / weight_scale_ap2)
-            shiftnorm_scale_bits = log2(1.0 / approximate_std)
+            weight_scale_bits = -log2(weight_scale_ap2)
+            shiftnorm_scale_bits = -log2(approximate_std)
             total_shift_bits = weight_scale_bits + shiftnorm_scale_bits + self.bits
             total_shift_bits = tf.reshape(total_shift_bits, [-1])
             # Now quantize each channel of mean appropriately.
             quantized_means = FixedPointQuantize(mean, mean_scale,
                                                  total_shift_bits, True)
-
-            outputs = (inputs - _broadcast(quantized_means)) * (
-                approximate_std)
+            outputs = inputs - quantized_means
+            outputs = outputs * approximate_std
 
         if scale:
             outputs = scale * outputs
