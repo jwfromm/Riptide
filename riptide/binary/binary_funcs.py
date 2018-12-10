@@ -56,6 +56,9 @@ def get_shiftnorm_ap2(layer,
         total_shift_bits = weight_scale_bits + shiftnorm_scale_bits + layer.bits
         quantized_mean = FixedPointQuantize(mean, mean_scale, total_shift_bits,
                                             rescale)
+        # When returning in the integer space, need to remove effect of std division.
+        if not rescale:
+            quantized_mean = approximate_std * quantized_mean
         return approximate_std, quantized_mean
 
 
