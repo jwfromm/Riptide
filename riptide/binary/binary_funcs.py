@@ -112,7 +112,7 @@ def XQuantize(x):
         # Allow weights to move off away from 1 if needed.
         leaky_grad_mask = tf.cast(
             tf.logical_or(
-                tf.logical_and(x > 1, dy < 0), tf.logical_and(x < -1, dy > 0)),
+                tf.logical_and(x > 1, dy > 0), tf.logical_and(x < -1, dy < 0)),
             tf.float32)
         dx = grad_mask * dy + 0.1 * leaky_grad_mask * dy
         return [dx]
