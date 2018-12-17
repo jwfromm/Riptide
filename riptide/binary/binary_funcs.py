@@ -12,8 +12,7 @@ def log2(x):
 def AP2(x):
     #x = tf.clip_by_value(x, 1e-7, 1.0)
     # Positive ap2 might be fine
-    with tf.name_scope("AP2"):
-        y = 2**(tf.round(log2(tf.abs(x))))
+    y = 2**(tf.round(log2(tf.abs(x))))
 
     def grad_fn(dy):
         return [dy]
@@ -72,23 +71,24 @@ def get_quantize_bits(x):
         mean = tf.expand_dims(mean, axis=0)
     bits = tf.cast(x >= 0, tf.float32)
     bits = (2 * bits) - 1
-    return AP2(mean), bits
+    with tf.name_scope("AP2"):
+        approximate_mean = AP2(mean)
+    return approximate_mean, bits
 
 
 # Fixed point quantize operator that supports per_channel scales and bitwidth.
 # Assumes min and max value are both scale.
 @tf.custom_gradient
 def FixedPointQuantize(inputs, scale, bits, rescale):
-    with tf.name_scope("FPQ"):
-        # Start by clipping values between specified range.
-        y = tf.clip_by_value(inputs, -scale, scale)
-        # Determine floating point value of each bit.
-        bit_value = scale / (2.0**bits - 1.0)
-        # Quantize tensor.
-        y = y / bit_value
-        y = tf.round(y)
-        # Readjust to floating point if specified.
-        y = tf.cond(rescale, true_fn=lambda: y * bit_value, false_fn=lambda: y)
+    # Start by clipping values between specified range.
+    y = tf.clip_by_value(inputs, -scale, scale)
+    # Determine floating point value of each bit.
+    bit_value = scale / (2.0**bits - 1.0)
+    # Quantize tensor.
+    y = y / bit_value
+    y = tf.round(y)
+    # Readjust to floating point if specified.
+    y = tf.cond(rescale, true_fn=lambda: y * bit_value, false_fn=lambda: y)
 
     def grad_fn(dy):
         grad_mask = tf.cast(tf.abs(inputs) <= scale, tf.float32)
@@ -108,12 +108,14 @@ def XQuantize(x):
         #grad_mask_lesser = tf.cast(tf.abs(x) <= 1, tf.float32)
         # Let big values leak a little
         #grad_mask = 0.1 * grad_mask_greater + grad_mask_lesser
-        grad_mask = tf.cast(tf.abs(x) <= 1, tf.float32)
+        # use a larger gradient cutoff to allow weights to grow if needed.
+        gradient_cutoff = 10.0
+        grad_mask = tf.cast(tf.abs(x) <= gradient_cutoff, tf.float32)
         # Allow weights to move off away from 1 if needed.
         leaky_grad_mask = tf.cast(
             tf.logical_or(
-                tf.logical_and(x > 1, dy > 0), tf.logical_and(x < -1, dy < 0)),
-            tf.float32)
+                tf.logical_and(x > gradient_cutoff, dy > 0),
+                tf.logical_and(x < -gradient_cutoff, dy < 0)), tf.float32)
         dx = grad_mask * dy + 0.1 * leaky_grad_mask * dy
         return [dx]
 

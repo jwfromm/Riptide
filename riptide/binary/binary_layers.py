@@ -193,7 +193,9 @@ class QAdd(keras.layers.Layer):
         if self.use_q:
             x = self.act(x, self.bits)
             y = self.act(y, self.bits)
-            output = AP2(self.scale) * (x + y)
+            with tf.name_scope("AP2"):
+                approx_scale = AP2(self.scale)
+            output = approx_scale * (x + y)
         else:
             output = x + y
         return output
@@ -670,13 +672,17 @@ class ShiftNormalization(Layer):
         #                                 self.epsilon)
 
         if self.pure_shiftnorm:
-            approximate_mean = AP2(
-                1.0 / (self.extra_scale * _broadcast(mean) + self.epsilon))
+            mean_factor = (1.0 / (
+                self.extra_scale * _broadcast(mean) + self.epsilon))
+            with tf.name_scope('AP2'):
+                approximate_mean = AP2(mean_factor)
             outputs = inputs * approximate_mean
         else:
             # Compute number of bits to shift.
-            approximate_std = AP2(
-                1.0 / (self.extra_scale * tf.sqrt(variance + self.epsilon)))
+            std_factor = (1.0 / (
+                self.extra_scale * tf.sqrt(variance + self.epsilon)))
+            with tf.name_scope('AP2'):
+                approximate_std = AP2(std_factor)
             # Quantizing the mean is a little tricky, start by determining
             # the quantization scale.
             mean_scale = 1.0 + (1 / (2**self.bits - 1))
@@ -691,8 +697,9 @@ class ShiftNormalization(Layer):
             total_shift_bits = weight_scale_bits + shiftnorm_scale_bits + self.bits
             total_shift_bits = tf.reshape(total_shift_bits, [-1])
             # Now quantize each channel of mean appropriately.
-            quantized_means = FixedPointQuantize(mean, mean_scale,
-                                                 total_shift_bits, True)
+            with tf.name_scope('FPQ'):
+                quantized_means = FixedPointQuantize(mean, mean_scale,
+                                                     total_shift_bits, True)
             outputs = inputs - quantized_means
             outputs = outputs * approximate_std
 
