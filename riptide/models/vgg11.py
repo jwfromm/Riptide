@@ -95,43 +95,77 @@ class vgg11(tf.keras.Model):
         self.classifier = nn.BinaryDense(classes, use_bias=False)
         self.scalu = nn.Scalu()
 
-    def call(self, inputs, training=None):
+    def call(self, inputs, training=None, debug=False):
+        layers = []
         with tf.name_scope('unbinarized'):
             x = self.conv1(inputs)
+            layers.append(x)
             x = self.bn1(x, training=training)
+            layers.append(x)
             x = self.pool1(x)
+            if self.scope.use_maxpool:
+                layers.append(x)
         # When running in binary, need to reduce spread of normal distribution
         x = self.scale(x)
+        layers.append(x)
         # Continue with binary layers.
         x = self.conv2(x)
+        layers.append(x)
         x = self.bn2(
             x, conv_weights=self.conv2.weights[0].value(), training=training)
+        layers.append(x)
         x = self.pool2(x)
+        if self.scope.use_maxpool:
+            layers.append(x)
         x = self.conv3(x)
+        layers.append(x)
         x = self.bn3(
             x, conv_weights=self.conv3.weights[0].value(), training=training)
+        layers.append(x)
         x = self.conv4(x)
+        layers.append(x)
         x = self.bn4(
             x, conv_weights=self.conv4.weights[0].value(), training=training)
+        layers.append(x)
         x = self.pool3(x)
+        if self.scope.use_maxpool:
+            layers.append(x)
         x = self.conv5(x)
+        layers.append(x)
         x = self.bn5(
             x, conv_weights=self.conv5.weights[0].value(), training=training)
+        layers.append(x)
         x = self.conv6(x)
+        layers.append(x)
         x = self.bn6(
             x, conv_weights=self.conv6.weights[0].value(), training=training)
+        layers.append(x)
         x = self.pool4(x)
+        if self.scope.use_maxpool:
+            layers.append(x)
         x = self.conv7(x)
+        layers.append(x)
         x = self.bn7(
             x, conv_weights=self.conv7.weights[0].value(), training=training)
+        layers.append(x)
         x = self.conv8(x)
+        layers.append(x)
         x = self.bn8(
             x, conv_weights=self.conv8.weights[0].value(), training=training)
+        layers.append(x)
         x = self.pool5(x)
+        if self.scope.use_maxpool:
+            layers.append(x)
         x = self.avgpool(x)
+        layers.append(x)
         #with tf.name_scope('unbinarized'):
         x = self.classifier(x)
+        layers.append(x)
         x = self.scalu(x)
+        layers.append(x)
         tf.summary.histogram('output', x)
 
-        return x
+        if debug:
+            return layers
+        else:
+            return x

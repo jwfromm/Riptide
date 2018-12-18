@@ -63,6 +63,7 @@ class Config(object):
                  use_maxpool=True,
                  use_act=True,
                  pure_shiftnorm=False,
+                 shiftnorm_scale=1.0,
                  use_qadd=False):
         self.actQ = actQ if actQ else lambda x: x
         self.weightQ = weightQ if weightQ else lambda x: x
@@ -70,6 +71,7 @@ class Config(object):
         self.use_bn = use_bn
         self.use_act = use_act
         self.pure_shiftnorm = pure_shiftnorm
+        self.shiftnorm_scale = shiftnorm_scale
         self.use_qadd = use_qadd
         self.use_maxpool = use_maxpool
 
@@ -262,8 +264,6 @@ class ShiftNormalization(Layer):
         When the next layer is linear (also e.g. `nn.relu`),
         this can be disabled since the scaling
         will be done by the next layer.
-    extra_scale:
-        Added multiplier for AP2.
     beta_initializer: Initializer for the beta weight.
     gamma_initializer: Initializer for the gamma weight.
     moving_mean_initializer: Initializer for the moving mean.
@@ -307,7 +307,6 @@ class ShiftNormalization(Layer):
                  epsilon=1e-3,
                  center=False,
                  scale=False,
-                 extra_scale=1.5,
                  beta_initializer='zeros',
                  gamma_initializer='ones',
                  moving_mean_initializer='zeros',
@@ -335,7 +334,7 @@ class ShiftNormalization(Layer):
         self.epsilon = epsilon
         self.center = center
         self.scale = scale
-        self.extra_scale = extra_scale
+        self.extra_scale = self.scope.shiftnorm_scale
         self.beta_initializer = initializers.get(beta_initializer)
         self.gamma_initializer = initializers.get(gamma_initializer)
         self.moving_mean_initializer = initializers.get(
