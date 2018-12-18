@@ -103,8 +103,7 @@ class vgg11(tf.keras.Model):
             x = self.bn1(x, training=training)
             layers.append(x)
             x = self.pool1(x)
-            if self.scope.use_maxpool:
-                layers.append(x)
+            layers.append(x)
         # When running in binary, need to reduce spread of normal distribution
         x = self.scale(x)
         layers.append(x)
