@@ -1,6 +1,6 @@
 from .models import cifar_resnet
 from .models import resnetv1b as resnet
-from .models import vgg11
+from .models import vgg11, vggnet
 from .binary.models import q_cifar_resnet
 from .binary.models import q_resnetv1b as q_resnet
 
@@ -21,6 +21,8 @@ def get_model(name, **kwargs):
         'q_cifarnet20': q_cifar_resnet.cifar_resnet20_v1,
         'vgg11': vgg11.vgg11,
         'q_vgg11': vgg11.vgg11,
+        'vggnet': vggnet.vggnet,
+        'q_vggnet': vggnet.vggnet,
     }
     name = name.lower()
     if name not in models:
