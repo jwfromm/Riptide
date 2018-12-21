@@ -54,7 +54,7 @@ def imagerecord_dataset(root,
     # Prefetch a batch at a time to smooth time taken to load for shuffling and preprocessing.
     imagenet_ds = imagenet_ds.prefetch(buffer_size=batch_size)
     if is_training:
-        imagenet_ds = imagenet_ds.shuffle(buffer_size=100)
+        imagenet_ds = imagenet_ds.shuffle(buffer_size=10000)
     decode_fn = partial(_decode_imagenet, preprocess=preprocess)
     imagenet_ds = imagenet_ds.apply(
         tf.data.experimental.map_and_batch(
@@ -106,7 +106,7 @@ def imagefolder_dataset(root,
     imagenet_ds = tf.data.Dataset.from_tensor_slices((list(files),
                                                       list(labels)))
     if is_training:
-        imagenet_ds = imagenet_ds.shuffle(buffer_size=100)
+        imagenet_ds = imagenet_ds.shuffle(buffer_size=10000)
     imagenet_ds = imagenet_ds.prefetch(buffer_size=None)
 
     imagenet_ds = imagenet_ds.apply(

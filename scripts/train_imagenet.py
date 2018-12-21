@@ -17,7 +17,7 @@ tf.flags.DEFINE_string('model', '', 'Name of model to train, must be set.')
 tf.flags.DEFINE_string(
     'experiment', '',
     'Suffix to add to model name, should describe purpose of run.')
-tf.flags.DEFINE_string('data_path', '/data3/imagenet/tfrecords',
+tf.flags.DEFINE_string('data_path', '/data/imagenet/tfrecords',
                        'Directory containing tfrecords to load.')
 tf.flags.DEFINE_string('gpus', '', 'Comma seperated list of GPUS to run on.')
 tf.flags.DEFINE_integer('epochs', 120, 'Number of epochs to train.')
@@ -37,6 +37,7 @@ def main(argv):
     os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.gpus
     # Get thread confirguration.
     op_threads, num_workers = setup_gpu_threadpool(len(FLAGS.gpus.split(',')))
+    num_gpus = len(FLAGS.gpus.split(',')) 
     # Set up the data input functions.
     train_preprocess = partial(
         preprocess_image,
@@ -76,7 +77,7 @@ def main(argv):
             bits = FLAGS.bits
             use_act = False
             use_bn = False
-            use_maxpool = False
+            use_maxpool = True
             pure_shiftnorm = False
             normal = False
         else:
@@ -85,7 +86,7 @@ def main(argv):
             bits = None
             use_act = True
             use_bn = True
-            use_maxpool = False
+            use_maxpool = True
             pure_shiftnorm = False
             normal = True
         config = Config(
@@ -155,7 +156,7 @@ def main(argv):
         # Otherwise, we must be doing training.
         global_step = tf.train.get_or_create_global_step()
         learning_rate_fn = learning_rate_with_smooth_decay(
-            batch_size=FLAGS.batch_size,
+            batch_size=num_gpus*FLAGS.batch_size,
             batch_denom=256,
             decay_epochs=30,
             decay_rate=0.1,
@@ -186,10 +187,9 @@ def main(argv):
     full_model_path = os.path.join(FLAGS.model_dir,
                                    "%s_%s" % (FLAGS.model, FLAGS.experiment))
     # Figure out which GPUS to run on.
-    if len(FLAGS.gpus.split(',')) > 1:
-        gpu_list = [int(g) for g in FLAGS.gpus.split(',')]
+    if num_gpus > 1:
         strategy = tf.contrib.distribute.MirroredStrategy(
-            num_gpus=len(gpu_list))
+            num_gpus=num_gpus)
     else:
         strategy = None
     session_config = tf.ConfigProto(
