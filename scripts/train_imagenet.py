@@ -37,7 +37,7 @@ def main(argv):
     os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.gpus
     # Get thread confirguration.
     op_threads, num_workers = setup_gpu_threadpool(len(FLAGS.gpus.split(',')))
-    num_gpus = len(FLAGS.gpus.split(',')) 
+    num_gpus = len(FLAGS.gpus.split(','))
     # Set up the data input functions.
     train_preprocess = partial(
         preprocess_image,
@@ -156,7 +156,7 @@ def main(argv):
         # Otherwise, we must be doing training.
         global_step = tf.train.get_or_create_global_step()
         learning_rate_fn = learning_rate_with_smooth_decay(
-            batch_size=num_gpus*FLAGS.batch_size,
+            batch_size=num_gpus * FLAGS.batch_size,
             batch_denom=256,
             decay_epochs=30,
             decay_rate=0.1,
@@ -171,7 +171,7 @@ def main(argv):
         optimizer = tf.train.MomentumOptimizer(
             learning_rate=learning_rate,
             momentum=FLAGS.momentum,
-            use_nesterov=True)
+            use_nesterov=False)
         update_ops = model.get_updates_for(features)
         with tf.control_dependencies(update_ops):
             train_op = optimizer.minimize(loss=loss, global_step=global_step)
@@ -188,8 +188,7 @@ def main(argv):
                                    "%s_%s" % (FLAGS.model, FLAGS.experiment))
     # Figure out which GPUS to run on.
     if num_gpus > 1:
-        strategy = tf.contrib.distribute.MirroredStrategy(
-            num_gpus=num_gpus)
+        strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=num_gpus)
     else:
         strategy = None
     session_config = tf.ConfigProto(

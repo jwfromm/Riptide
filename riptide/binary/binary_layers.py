@@ -255,6 +255,9 @@ class ShiftNormalization(Layer):
         For instance, after a `Conv2D` layer with
         `data_format="channels_first"`,
         set `axis=1` in `BatchNormalization`.
+    binary_dense: Set true when using after a binary dense layer.
+        Need some special handling for batchnorm for binary dense layers to
+        prevent small variance.
     momentum: Momentum for the moving average.
     epsilon: Small float added to variance to avoid dividing by zero.
     center: If True, add offset of `beta` to normalized tensor.
@@ -303,6 +306,7 @@ class ShiftNormalization(Layer):
 
     def __init__(self,
                  axis=-1,
+                 binary_dense=False,
                  momentum=0.99,
                  epsilon=1e-3,
                  center=False,
@@ -330,6 +334,7 @@ class ShiftNormalization(Layer):
             self.axis = axis[:]
         else:
             self.axis = axis
+        self.binary_dense = binary_dense
         self.momentum = momentum
         self.epsilon = epsilon
         self.center = center
@@ -398,7 +403,9 @@ class ShiftNormalization(Layer):
                     input_shape)
         self.input_spec = InputSpec(ndim=ndims, axes=axis_to_dim)
 
-        if len(axis_to_dim) == 1:
+        if self.binary_dense:
+            param_shape = [1]
+        elif len(axis_to_dim) == 1:
             # Single axis batch norm (most common/default use-case)
             param_shape = (list(axis_to_dim.values())[0], )
         else:
@@ -585,7 +592,12 @@ class ShiftNormalization(Layer):
         # Compute the axes along which to reduce the mean / variance
         input_shape = inputs.get_shape()
         ndims = len(input_shape)
-        reduction_axes = [i for i in range(ndims) if i not in self.axis]
+        # For dense layers, require a full reduction.
+        if self.binary_dense:
+            reduction_axes = [i for i in range(ndims)]
+        # Otherwise, reduce all but the feature axis.
+        else:
+            reduction_axes = [i for i in range(ndims) if i not in self.axis]
 
         # Broadcasting only necessary for single-axis batch norm where the axis is
         # not the last dimension
