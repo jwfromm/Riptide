@@ -78,7 +78,6 @@ def main(argv):
             use_act = False
             use_bn = False
             use_maxpool = True
-            pure_shiftnorm = False
             normal = False
         else:
             actQ = None
@@ -87,7 +86,6 @@ def main(argv):
             use_act = True
             use_bn = True
             use_maxpool = True
-            pure_shiftnorm = False
             normal = True
         config = Config(
             actQ=actQ,
@@ -95,8 +93,8 @@ def main(argv):
             bits=bits,
             use_act=use_act,
             use_bn=use_bn,
-            use_maxpool=use_maxpool,
-            pure_shiftnorm=pure_shiftnorm)
+            use_maxpool=use_maxpool)
+
         with config:
             model = get_model(FLAGS.model)
 

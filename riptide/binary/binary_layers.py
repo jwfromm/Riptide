@@ -37,10 +37,6 @@ class Config(object):
     use_bn: bool
         Whether to apply batch normalization at the end of the layer or not.
 
-    pure_shiftnorm: bool
-        If true, shift normalization only scales and has no centering. Truly
-        only shifting.
-
     use_qadd: bool
         If true, do quantization before addition in Qadd layers.
 
@@ -62,7 +58,6 @@ class Config(object):
                  use_bn=True,
                  use_maxpool=True,
                  use_act=True,
-                 pure_shiftnorm=False,
                  shiftnorm_scale=1.0,
                  use_qadd=False):
         self.actQ = actQ if actQ else lambda x: x
@@ -70,7 +65,6 @@ class Config(object):
         self.bits = bits
         self.use_bn = use_bn
         self.use_act = use_act
-        self.pure_shiftnorm = pure_shiftnorm
         self.shiftnorm_scale = shiftnorm_scale
         self.use_qadd = use_qadd
         self.use_maxpool = use_maxpool
@@ -328,7 +322,6 @@ class ShiftNormalization(Layer):
         super(ShiftNormalization, self).__init__(
             name=name, trainable=trainable, **kwargs)
         self.scope = Config.current
-        self.pure_shiftnorm = self.scope.pure_shiftnorm
         self.bits = self.scope.bits
         if isinstance(axis, list):
             self.axis = axis[:]
@@ -626,13 +619,15 @@ class ShiftNormalization(Layer):
             # Some of the computations here are not necessary when training==False
             # but not a constant. However, this makes the code simpler.
             keep_dims = len(self.axis) > 1
-            if self.pure_shiftnorm:
-                # only look at positive numbers since others get binarized away.
-                mean, variance = tf.nn.moments(
-                    tf.abs(inputs), reduction_axes, keep_dims=keep_dims)
-            else:
-                mean, variance = tf.nn.moments(
-                    inputs, reduction_axes, keep_dims=keep_dims)
+
+            mean, variance = tf.nn.moments(
+                inputs, reduction_axes, keep_dims=keep_dims)
+
+            # When norming the output of a binary dense layer, 
+            # need to make sure shape is maintained.
+            if self.binary_dense:
+                mean = tf.reshape(mean, [1])
+                variance = tf.reshape(variance, [1])
 
             moving_mean = self.moving_mean
             moving_variance = self.moving_variance
@@ -682,37 +677,30 @@ class ShiftNormalization(Layer):
         #                                 _broadcast(variance), offset, scale,
         #                                 self.epsilon)
 
-        if self.pure_shiftnorm:
-            mean_factor = (1.0 / (
-                self.extra_scale * _broadcast(mean) + self.epsilon))
-            with tf.name_scope('AP2'):
-                approximate_mean = AP2(mean_factor)
-            outputs = inputs * approximate_mean
+        # Compute number of bits to shift.
+        std_factor = (1.0 / (
+            self.extra_scale * tf.sqrt(variance + self.epsilon)))
+        with tf.name_scope('AP2'):
+            approximate_std = AP2(std_factor)
+        # Quantizing the mean is a little tricky, start by determining
+        # the quantization scale.
+        mean_scale = 1.0 + (1 / (2**self.bits - 1))
+        # Now determine number of bits needed, the sum of weight scale
+        # bits and shift norm scale bits.
+        if conv_weights is not None:
+            weight_scale_ap2, _ = get_quantize_bits(conv_weights)
         else:
-            # Compute number of bits to shift.
-            std_factor = (1.0 / (
-                self.extra_scale * tf.sqrt(variance + self.epsilon)))
-            with tf.name_scope('AP2'):
-                approximate_std = AP2(std_factor)
-            # Quantizing the mean is a little tricky, start by determining
-            # the quantization scale.
-            mean_scale = 1.0 + (1 / (2**self.bits - 1))
-            # Now determine number of bits needed, the sum of weight scale
-            # bits and shift norm scale bits.
-            if conv_weights is not None:
-                weight_scale_ap2, _ = get_quantize_bits(conv_weights)
-            else:
-                weight_scale_ap2 = 1.0
-            weight_scale_bits = -log2(weight_scale_ap2)
-            shiftnorm_scale_bits = -log2(approximate_std)
-            total_shift_bits = weight_scale_bits + shiftnorm_scale_bits + self.bits
-            total_shift_bits = tf.reshape(total_shift_bits, [-1])
-            # Now quantize each channel of mean appropriately.
-            with tf.name_scope('FPQ'):
-                quantized_means = FixedPointQuantize(mean, mean_scale,
-                                                     total_shift_bits, True)
-            outputs = inputs - quantized_means
-            outputs = outputs * approximate_std
+            weight_scale_ap2 = 1.0
+        weight_scale_bits = -log2(weight_scale_ap2)
+        shiftnorm_scale_bits = -log2(approximate_std)
+        total_shift_bits = weight_scale_bits + shiftnorm_scale_bits + self.bits
+        total_shift_bits = tf.reshape(total_shift_bits, [-1])
+        # Now quantize each channel of mean appropriately.
+        with tf.name_scope('FPQ'):
+            quantized_means = FixedPointQuantize(mean, mean_scale,
+                                                 total_shift_bits, True)
+        outputs = inputs - quantized_means
+        outputs = outputs * approximate_std
 
         if scale:
             outputs = scale * outputs

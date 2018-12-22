@@ -62,7 +62,7 @@ def get_shiftnorm_ap2(layer,
 
 
 def get_quantize_bits(x):
-    if len(x.shape) > 1:
+    if len(x.shape) > 2:
         mean = tf.reduce_mean(tf.abs(tf.reshape(x, [-1, x.shape[-1]])), axis=0)
     else:
         mean = tf.reduce_mean(tf.abs(x))
