@@ -512,10 +512,10 @@ class ShiftNormalization(Layer):
         stddev = tf.sqrt(variance + self.epsilon)
         # Compute the average mean and standard deviation, as if they were
         # initialized with this batch's moments.
-        mixed_renorm_mean = (self.renorm_mean +
-                             (1. - self.renorm_mean_weight) * mean)
-        mixed_renorm_stddev = (self.renorm_stddev +
-                               (1. - self.renorm_stddev_weight) * stddev)
+        mixed_renorm_mean = (
+            self.renorm_mean + (1. - self.renorm_mean_weight) * mean)
+        mixed_renorm_stddev = (
+            self.renorm_stddev + (1. - self.renorm_stddev_weight) * stddev)
         # Compute the corrections for batch renorm.
         r = stddev / mixed_renorm_stddev
         d = (mean - mixed_renorm_mean) / mixed_renorm_stddev
@@ -623,7 +623,7 @@ class ShiftNormalization(Layer):
             mean, variance = tf.nn.moments(
                 inputs, reduction_axes, keep_dims=keep_dims)
 
-            # When norming the output of a binary dense layer, 
+            # When norming the output of a binary dense layer,
             # need to make sure shape is maintained.
             if self.binary_dense:
                 mean = tf.reshape(mean, [1])
@@ -678,13 +678,13 @@ class ShiftNormalization(Layer):
         #                                 self.epsilon)
 
         # Compute number of bits to shift.
-        std_factor = (1.0 / (
-            self.extra_scale * tf.sqrt(variance + self.epsilon)))
+        std_factor = (
+            1.0 / (self.extra_scale * tf.sqrt(variance + self.epsilon)))
         with tf.name_scope('AP2'):
             approximate_std = AP2(std_factor)
         # Quantizing the mean is a little tricky, start by determining
         # the quantization scale.
-        mean_scale = 1.0 + (1 / (2**self.bits - 1))
+        mean_scale = 1.0 + (1.0 / (2.0**self.bits - 1.0))
         # Now determine number of bits needed, the sum of weight scale
         # bits and shift norm scale bits.
         if conv_weights is not None:

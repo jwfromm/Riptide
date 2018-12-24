@@ -13,10 +13,10 @@ class vggnet(tf.keras.Model):
             kernel_size=7,
             strides=2,
             padding='same',
-            activation='relu',
+            activation=None,
             use_bias=False)
         self.pool1 = nn.NormalMaxPool2D(pool_size=2, strides=2)
-        self.bn1 = nn.NormalBatchNormalization()
+        self.bn1 = nn.NormalBatchNormalization(center=False, scale=False)
         self.quantize = nn.Scale(1.0)
 
         self.conv2 = nn.BinaryConv2D(
@@ -125,58 +125,69 @@ class vggnet(tf.keras.Model):
 
         x = self.conv2(x)
         layers.append(x)
-        x = self.bn2(x, conv_weights=self.conv2.weights[0].value(), training=training)
+        x = self.bn2(
+            x, conv_weights=self.conv2.weights[0].value(), training=training)
         layers.append(x)
         x = self.conv3(x)
         layers.append(x)
-        x = self.bn3(x, conv_weights=self.conv3.weights[0].value(), training=training)
+        x = self.bn3(
+            x, conv_weights=self.conv3.weights[0].value(), training=training)
         layers.append(x)
         x = self.conv4(x)
         layers.append(x)
         x = self.pool4(x)
         layers.append(x)
-        x = self.bn4(x, conv_weights=self.conv4.weights[0].value(), training=training)
+        x = self.bn4(
+            x, conv_weights=self.conv4.weights[0].value(), training=training)
         layers.append(x)
 
         x = self.conv5(x)
         layers.append(x)
-        x = self.bn5(x, conv_weights=self.conv5.weights[0].value(), training=training)
+        x = self.bn5(
+            x, conv_weights=self.conv5.weights[0].value(), training=training)
         layers.append(x)
         x = self.conv6(x)
         layers.append(x)
-        x = self.bn6(x, conv_weights=self.conv6.weights[0].value(), training=training)
+        x = self.bn6(
+            x, conv_weights=self.conv6.weights[0].value(), training=training)
         layers.append(x)
         x = self.conv7(x)
         layers.append(x)
         x = self.pool7(x)
         layers.append(x)
-        x = self.bn7(x, conv_weights=self.conv7.weights[0].value(), training=training)
+        x = self.bn7(
+            x, conv_weights=self.conv7.weights[0].value(), training=training)
         layers.append(x)
 
         x = self.conv8(x)
         layers.append(x)
-        x = self.bn8(x, conv_weights=self.conv8.weights[0].value(), training=training)
+        x = self.bn8(
+            x, conv_weights=self.conv8.weights[0].value(), training=training)
         layers.append(x)
         x = self.conv9(x)
         layers.append(x)
-        x = self.bn9(x, conv_weights=self.conv9.weights[0].value(), training=training)
+        x = self.bn9(
+            x, conv_weights=self.conv9.weights[0].value(), training=training)
         layers.append(x)
         x = self.conv10(x)
         layers.append(x)
         x = self.pool10(x)
         layers.append(x)
-        x = self.bn10(x, conv_weights=self.conv10.weights[0].value(), training=training)
+        x = self.bn10(
+            x, conv_weights=self.conv10.weights[0].value(), training=training)
         layers.append(x)
         x = self.flatten(x)
         layers.append(x)
 
         x = self.dense1(x)
         layers.append(x)
-        x = self.bn11(x, conv_weights=self.dense1.weights[0].value(), training=training)
+        x = self.bn11(
+            x, conv_weights=self.dense1.weights[0].value(), training=training)
         layers.append(x)
         x = self.dense2(x)
         layers.append(x)
-        x = self.bn12(x, conv_weights=self.dense2.weights[0].value(), training=training)
+        x = self.bn12(
+            x, conv_weights=self.dense2.weights[0].value(), training=training)
         layers.append(x)
         x = self.dense3(x)
         layers.append(x)

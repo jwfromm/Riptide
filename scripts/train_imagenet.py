@@ -24,7 +24,7 @@ tf.flags.DEFINE_integer('epochs', 120, 'Number of epochs to train.')
 tf.flags.DEFINE_integer('batch_size', 64, 'Size of each minibatch.')
 tf.flags.DEFINE_integer('image_size', 224,
                         'Height and Width of processed images.')
-tf.flags.DEFINE_float('learning_rate', .128, 'Starting learning rate.')
+tf.flags.DEFINE_float('learning_rate', .0128, 'Starting learning rate.')
 tf.flags.DEFINE_float('wd', 1e-4, 'Weight decay loss coefficient.')
 tf.flags.DEFINE_float('momentum', 0.9, 'Momentum used for optimizer.')
 tf.flags.DEFINE_bool('binary', False, 'Use a binary network.')
@@ -160,7 +160,7 @@ def main(argv):
             decay_rate=0.1,
             base_lr=FLAGS.learning_rate,
             warmup=True,
-            staircase=False,
+            staircase=True,
             num_images=1281167)
         learning_rate = learning_rate_fn(global_step)
         # Track learning rate.
