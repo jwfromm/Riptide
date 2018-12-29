@@ -20,7 +20,7 @@ tf.flags.DEFINE_string(
 tf.flags.DEFINE_string('data_path', '/data/imagenet/tfrecords',
                        'Directory containing tfrecords to load.')
 tf.flags.DEFINE_string('gpus', '', 'Comma seperated list of GPUS to run on.')
-tf.flags.DEFINE_integer('epochs', 120, 'Number of epochs to train.')
+tf.flags.DEFINE_integer('epochs', 240, 'Number of epochs to train.')
 tf.flags.DEFINE_integer('batch_size', 64, 'Size of each minibatch.')
 tf.flags.DEFINE_integer('image_size', 224,
                         'Height and Width of processed images.')
@@ -156,7 +156,7 @@ def main(argv):
         learning_rate_fn = learning_rate_with_smooth_decay(
             batch_size=num_gpus * FLAGS.batch_size,
             batch_denom=256,
-            decay_epochs=30,
+            decay_epochs=60,
             decay_rate=0.1,
             base_lr=FLAGS.learning_rate,
             warmup=True,
