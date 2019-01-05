@@ -512,10 +512,10 @@ class ShiftNormalization(Layer):
         stddev = tf.sqrt(variance + self.epsilon)
         # Compute the average mean and standard deviation, as if they were
         # initialized with this batch's moments.
-        mixed_renorm_mean = (
-            self.renorm_mean + (1. - self.renorm_mean_weight) * mean)
-        mixed_renorm_stddev = (
-            self.renorm_stddev + (1. - self.renorm_stddev_weight) * stddev)
+        mixed_renorm_mean = (self.renorm_mean +
+                             (1. - self.renorm_mean_weight) * mean)
+        mixed_renorm_stddev = (self.renorm_stddev +
+                               (1. - self.renorm_stddev_weight) * stddev)
         # Compute the corrections for batch renorm.
         r = stddev / mixed_renorm_stddev
         d = (mean - mixed_renorm_mean) / mixed_renorm_stddev
@@ -677,28 +677,15 @@ class ShiftNormalization(Layer):
         #                                 _broadcast(variance), offset, scale,
         #                                 self.epsilon)
 
-        # Compute number of bits to shift.
-        std_factor = (
-            1.0 / (self.extra_scale * tf.sqrt(variance + self.epsilon)))
-        with tf.name_scope('AP2'):
-            approximate_std = AP2(std_factor)
-        # Quantizing the mean is a little tricky, start by determining
-        # the quantization scale.
-        mean_scale = 1.0 + (1.0 / (2.0**self.bits - 1.0))
-        # Now determine number of bits needed, the sum of weight scale
-        # bits and shift norm scale bits.
-        if conv_weights is not None:
-            weight_scale_ap2, _ = get_quantize_bits(conv_weights)
-        else:
-            weight_scale_ap2 = 1.0
-        weight_scale_bits = -log2(weight_scale_ap2)
-        shiftnorm_scale_bits = -log2(approximate_std)
-        total_shift_bits = weight_scale_bits + shiftnorm_scale_bits + self.bits
-        total_shift_bits = tf.reshape(total_shift_bits, [-1])
-        # Now quantize each channel of mean appropriately.
-        with tf.name_scope('FPQ'):
-            quantized_means = FixedPointQuantize(mean, mean_scale,
-                                                 total_shift_bits, True)
+        approximate_std, quantized_means = compute_quantized_shiftnorm(
+            variance,
+            mean,
+            self.epsilon,
+            conv_weights,
+            self.extra_scale,
+            self.bits,
+            rescale=True)
+
         outputs = inputs - quantized_means
         outputs = outputs * approximate_std
 
