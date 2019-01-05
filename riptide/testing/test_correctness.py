@@ -18,8 +18,7 @@ class CorrectnessTest(tf.test.TestCase):
 
             # Convert layers to integer representation for comparison to
             # fast implementation.
-            converted_layers = convert_model(
-                model, layers, use_maxpool=use_maxpool)
+            converted_layers = convert_model(model, layers)
 
             # Check each layer versus the fast implementation TODO
             for i, layer in enumerate(converted_layers):
