@@ -22,7 +22,7 @@ class CorrectnessTest(tf.test.TestCase):
 
             # Check each layer versus the fast implementation TODO
             for i, layer in enumerate(converted_layers):
-                if model.layers[i].name == 'conv2d' or 'binary_dense' in model.layers[i].name:
+                if model.layers[i].name == 'conv2d':
                     nnvm_output = verify_nnvm_vgg.run(
                         test_input, stop_layer=model.layers[i].name)
                     layer_np = get_numpy(sess, layer)
@@ -32,7 +32,7 @@ class CorrectnessTest(tf.test.TestCase):
                         print("Mismatch on layer %d: %s" %
                               (i, model.layers[i].name))
 
-                elif 'binary_conv2d' in model.layers[i].name:
+                elif 'shift_normalization' in model.layers[i].name:
                     nnvm_output = verify_nnvm_vgg.run(
                         test_input, stop_layer=model.layers[i].name)
                     layer_np = get_numpy(sess, converted_layers[i + 1])
