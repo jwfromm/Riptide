@@ -183,8 +183,13 @@ def HWGQuantize(x, clusters):
 # Assumes input is clipped to [0, 1]
 @tf.custom_gradient
 def DQ(x, bits):
-    output = (1.0 / (2.0**bits - 1.0)) * tf.round((2.0**bits - 1.0) * x)
+    # Use small adjustment to avoid rounding inconsistency.
+    epsilon = 1e-5
+    # Round to nearest linear bin in [0, 1].
+    output = (1.0 /
+              (2.0**bits - 1.0)) * tf.round((2.0**bits - 1.0) * x + epsilon)
 
+    # Pass through gradient.
     def grad_fn(dy):
         return [dy, None]
 
@@ -192,7 +197,9 @@ def DQ(x, bits):
 
 
 def DQuantize(x, bits):
+    # Apply clipping in [0, 1] with associated gradient.
     x = tf.clip_by_value(x, 0, 1)
+    # Quantize linearlly.
     return DQ(x, bits)
 
 
@@ -203,7 +210,8 @@ def DQuantizeW(x, bits):
 
 def DQuantizeBits(x, bits):
     x = tf.clip_by_value(x, 0, 1)
-    return tf.round(x * (2.0**bits - 1.0))
+    epsilon = 1e-5
+    return tf.round(x * (2.0**bits - 1.0) + epsilon)
 
 
 def DQuantizeBitsW(x, bits):
