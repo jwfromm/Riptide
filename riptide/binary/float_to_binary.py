@@ -17,7 +17,6 @@ def convert_model(model, layers, bits=2.0):
                 converted_layer = DQuantizeBits(converted_layer, bits=bits)
                 converted_layers.append(converted_layer)
             elif 'shift_normalization' in layer.name:
-                mean, _ = get_quantize_bits(model.layers[i - 1].weights[0])
 
                 # Find preceding conv layer.
                 if 'max_pooling2d' in model.layers[i - 1].name:
@@ -25,6 +24,8 @@ def convert_model(model, layers, bits=2.0):
                 else:
                     layer_offset = 1
 
+                mean, _ = get_quantize_bits(
+                    model.layers[i - layer_offset].weights[0])
                 shift_std, shift_mean = get_shiftnorm_ap2(
                     model.layers[i],
                     conv_weights=model.layers[i - layer_offset].weights[0],
