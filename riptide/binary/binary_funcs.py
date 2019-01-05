@@ -45,15 +45,13 @@ def compute_quantized_shiftnorm(variance,
     # bits and shift norm scale bits.
     weight_scale_ap2, _ = get_quantize_bits(conv_weights)
     weight_scale_bits = -log2(weight_scale_ap2)
-    shiftnorm_scale_bits = -log2(approximate_std)
-    total_lesser_bits = weight_scale_bits + shiftnorm_scale_bits
-    total_lesser_bits = tf.reshape(total_lesser_bits, [-1])
-    total_shift_bits = total_lesser_bits + bits
+    weight_scale_bits = tf.reshape(weight_scale_bits, [-1])
+    total_shift_bits = weight_scale_bits + bits
 
     # Quantizing the mean is a little tricky, start by determining
     # the quantization scale.
     mean_scale = 1.0 + ((1.0 / (2.0**bits - 1.0)) *
-                        (1.0 - (1.0 / 2.0**total_lesser_bits)))
+                        (1.0 - (1.0 / 2.0**weight_scale_bits)))
 
     # Now quantize each channel of mean appropriately.
     with tf.name_scope('FPQ'):
