@@ -28,7 +28,7 @@ class CorrectnessTest(tf.test.TestCase):
                         test_input, stop_layer=model.layers[i].name)
                     layer_np = get_numpy(sess, layer)
 
-                    correct = np.allclose(layer_np, nnvm_output)
+                    correct = np.allclose(layer_np, nnvm_output, rtol=1e-3)
                     if not correct:
                         print("Mismatch on layer %d: %s" %
                               (i, model.layers[i].name))
@@ -38,7 +38,7 @@ class CorrectnessTest(tf.test.TestCase):
                         test_input, stop_layer=model.layers[i].name)
                     layer_np = get_numpy(sess, converted_layers[i + 1])
 
-                    correct = np.allclose(layer_np, nnvm_output)
+                    correct = np.allclose(layer_np, nnvm_output, rtol=1e-3)
                     if not correct:
                         print("Mismatch on layer %d: %s" %
                               (i, model.layers[i].name))
