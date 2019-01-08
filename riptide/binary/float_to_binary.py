@@ -14,17 +14,8 @@ def convert_model(model, layers, bits=2.0):
                 mean, _ = get_quantize_bits(model.layers[i].weights[0])
                 scale_factor = (bits**2 - 1) * 2**(-log2(mean))
                 converted_layer = tf.round(layers[i] * scale_factor)
-                converted_layer = DQuantizeBits(converted_layer, bits=bits) 
                 converted_layers.append(converted_layer)
             elif 'shift_normalization' in layer.name:
-                mean, _ = get_quantize_bits(model.layers[i - 1].weights[0])
-                shift_std, shift_mean = get_shiftnorm_ap2(
-                    model.layers[i],
-                    conv_weights=model.layers[i - 1].weights[0],
-                    rescale=True)
-                total_shift = -log2(mean) - log2(shift_std)
-                scale_factor = (bits**2 - 1) * 2**total_shift
-                converted_layer = tf.round(layers[i] * scale_factor)
-                converted_layer = DQuantizeBits(converted_layer, bits=bits) 
+                converted_layer = DQuantizeBits(layers[i], bits=bits)
                 converted_layers.append(converted_layer)
     return converted_layers

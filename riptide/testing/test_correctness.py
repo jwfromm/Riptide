@@ -2,7 +2,6 @@ import numpy as np
 from riptide.binary.binary_layers import Config
 from riptide.binary.float_to_binary import convert_model
 from riptide.binary.binary_funcs import DQuantize, XQuantize, get_numpy
-from riptide.models.vgg11 import vgg11
 from end2end import verify_nnvm_vgg
 from end2end.verify_nnvm_vgg import *
 
@@ -23,22 +22,25 @@ class CorrectnessTest(tf.test.TestCase):
 
             # Check each layer versus the fast implementation TODO
             for i, layer in enumerate(converted_layers):
-                if model.layers[i].name == 'conv2d' or 'binary_dense' in model.layers[i].name:
-                    nnvm_output = verify_nnvm_vgg.run(test_input, stop_layer=model.layers[i].name)
+                if model.layers[i].name == 'conv2d':
+                    nnvm_output = verify_nnvm_vgg.run(
+                        test_input, stop_layer=model.layers[i].name)
                     layer_np = get_numpy(sess, layer)
 
-                    correct = np.allclose(layer_np, nnvm_output)
+                    correct = np.allclose(layer_np, nnvm_output, rtol=1e-3)
                     if not correct:
-                        print("Mismatch on layer %d: %s" % (i, model.layers[i].name))
+                        print("Mismatch on layer %d: %s" %
+                              (i, model.layers[i].name))
 
+                elif 'shift_normalization' in model.layers[i].name:
+                    nnvm_output = verify_nnvm_vgg.run(
+                        test_input, stop_layer=model.layers[i].name)
+                    layer_np = get_numpy(sess, converted_layers[i + 1])
 
-                elif 'binary_conv2d' in model.layers[i].name:
-                    nnvm_output = verify_nnvm_vgg.run(test_input, stop_layer=model.layers[i].name)
-                    layer_np = get_numpy(sess, converted_layers[i+1])
-
-                    correct = np.allclose(layer_np, nnvm_output)
+                    correct = np.allclose(layer_np, nnvm_output, rtol=1e-3)
                     if not correct:
-                        print("Mismatch on layer %d: %s" % (i, model.layers[i].name))
+                        print("Mismatch on layer %d: %s" %
+                              (i, model.layers[i].name))
 
 
 if __name__ == '__main__':

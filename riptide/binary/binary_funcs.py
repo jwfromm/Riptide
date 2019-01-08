@@ -30,35 +30,45 @@ def get_numpy(sess, x):
     return output
 
 
-def get_shiftnorm_ap2(layer,
-                      pure_shiftnorm=False,
-                      conv_weights=None,
-                      rescale=False):
+def compute_quantized_shiftnorm(variance,
+                                mean,
+                                epsilon,
+                                conv_weights,
+                                extra_scale,
+                                bits,
+                                rescale=True):
+    # Compute number of bits to shift.
+    std_factor = (1.0 / (extra_scale * tf.sqrt(variance + epsilon)))
+    with tf.name_scope('AP2'):
+        approximate_std = AP2(std_factor)
+    # Now determine number of bits needed, the sum of weight scale
+    # bits and shift norm scale bits.
+    weight_scale_ap2, _ = get_quantize_bits(conv_weights)
+    weight_scale_bits = -log2(weight_scale_ap2)
+    weight_scale_bits = tf.reshape(weight_scale_bits, [-1])
+    total_shift_bits = weight_scale_bits + bits
+
+    # Quantizing the mean is a little tricky, start by determining
+    # the quantization scale.
+    mean_scale = 1.0 + ((1.0 / (2.0**bits - 1.0)) *
+                        (1.0 - (1.0 / 2.0**weight_scale_bits)))
+
+    # Now quantize each channel of mean appropriately.
+    with tf.name_scope('FPQ'):
+        quantized_means = FixedPointQuantize(mean, mean_scale,
+                                             total_shift_bits, rescale)
+    return approximate_std, quantized_means
+
+
+def get_shiftnorm_ap2(layer, conv_weights, rescale=False):
     mean = layer.weights[0].value()
     extra_scale = layer.extra_scale
     epsilon = layer.epsilon
-    if pure_shiftnorm:
-        approximate_mean = AP2(1.0 / (extra_scale * mean + epsilon))
-        return approximate_mean, None
-
-    else:
-        variance = layer.weights[1].value()
-        mean_scale = 1.0 + (1 / (2**layer.bits - 1))
-        approximate_std = AP2(1.0 /
-                              (extra_scale * tf.sqrt(variance + epsilon)))
-        if conv_weights is not None:
-            weight_scale_ap2, _ = get_quantize_bits(conv_weights)
-        else:
-            weight_scale_ap2 = 1.0
-        weight_scale_bits = -log2(weight_scale_ap2)
-        shiftnorm_scale_bits = -log2(approximate_std)
-        total_shift_bits = weight_scale_bits + shiftnorm_scale_bits + layer.bits
-        quantized_mean = FixedPointQuantize(mean, mean_scale, total_shift_bits,
-                                            rescale)
-        # When returning in the integer space, need to remove effect of std division.
-        if not rescale:
-            quantized_mean = approximate_std * quantized_mean
-        return approximate_std, quantized_mean
+    variance = layer.weights[1].value()
+    bits = layer.bits
+    approximate_std, quantized_means = compute_quantized_shiftnorm(
+        variance, mean, epsilon, conv_weights, extra_scale, bits, rescale)
+    return approximate_std, quantized_means
 
 
 def get_quantize_bits(x):
@@ -171,8 +181,13 @@ def HWGQuantize(x, clusters):
 # Assumes input is clipped to [0, 1]
 @tf.custom_gradient
 def DQ(x, bits):
-    output = (1.0 / (2.0**bits - 1.0)) * tf.round((2.0**bits - 1.0) * x)
+    # Use small adjustment to avoid rounding inconsistency.
+    epsilon = 1e-5
+    # Round to nearest linear bin in [0, 1].
+    output = (1.0 /
+              (2.0**bits - 1.0)) * tf.round((2.0**bits - 1.0) * x + epsilon)
 
+    # Pass through gradient.
     def grad_fn(dy):
         return [dy, None]
 
@@ -180,7 +195,9 @@ def DQ(x, bits):
 
 
 def DQuantize(x, bits):
+    # Apply clipping in [0, 1] with associated gradient.
     x = tf.clip_by_value(x, 0, 1)
+    # Quantize linearlly.
     return DQ(x, bits)
 
 
@@ -191,7 +208,8 @@ def DQuantizeW(x, bits):
 
 def DQuantizeBits(x, bits):
     x = tf.clip_by_value(x, 0, 1)
-    return tf.round(x * (2.0**bits - 1.0))
+    epsilon = 1e-5
+    return tf.round(x * (2.0**bits - 1.0) + epsilon)
 
 
 def DQuantizeBitsW(x, bits):
