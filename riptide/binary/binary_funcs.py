@@ -104,11 +104,9 @@ def XQuantize(x):
     y = mean * bits
 
     def grad_fn(dy):
-        #grad_mask_greater = tf.cast(tf.abs(x) >= 1, tf.float32)
-        #grad_mask_lesser = tf.cast(tf.abs(x) <= 1, tf.float32)
-        # Let big values leak a little
-        #grad_mask = 0.1 * grad_mask_greater + grad_mask_lesser
-        # use a larger gradient cutoff to allow weights to grow if needed.
+        # Use a larger gradient cutoff to allow weights to grow if needed.
+        # This can effect the scales based on the means of kernels.
+        # Likely has no significant effect though.
         gradient_cutoff = 10.0
         grad_mask = tf.cast(tf.abs(x) <= gradient_cutoff, tf.float32)
         # Allow weights to move off away from 1 if needed.

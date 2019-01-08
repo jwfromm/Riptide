@@ -5,7 +5,6 @@ from functools import partial
 from riptide.get_models import get_model
 from riptide.utils.datasets import imagerecord_dataset
 from riptide.utils.thread_helper import setup_gpu_threadpool
-from riptide.utils.learning_rate import learning_rate_with_smooth_decay
 from riptide.binary.binary_layers import Config, DQuantize, XQuantize
 from slim.preprocessing.inception_preprocessing import preprocess_image
 
@@ -20,7 +19,7 @@ tf.flags.DEFINE_string(
 tf.flags.DEFINE_string('data_path', '/data/imagenet/tfrecords',
                        'Directory containing tfrecords to load.')
 tf.flags.DEFINE_string('gpus', '', 'Comma seperated list of GPUS to run on.')
-tf.flags.DEFINE_integer('epochs', 240, 'Number of epochs to train.')
+tf.flags.DEFINE_integer('epochs', 480, 'Number of epochs to train.')
 tf.flags.DEFINE_integer('batch_size', 64, 'Size of each minibatch.')
 tf.flags.DEFINE_integer('image_size', 224,
                         'Height and Width of processed images.')
@@ -153,16 +152,8 @@ def main(argv):
 
         # Otherwise, we must be doing training.
         global_step = tf.train.get_or_create_global_step()
-        learning_rate_fn = learning_rate_with_smooth_decay(
-            batch_size=num_gpus * FLAGS.batch_size,
-            batch_denom=256,
-            decay_epochs=60,
-            decay_rate=0.1,
-            base_lr=FLAGS.learning_rate,
-            warmup=True,
-            staircase=True,
-            num_images=1281167)
-        learning_rate = learning_rate_fn(global_step)
+        learning_rate = tf.train.cosine_decay_restarts(FLAGS.learning_rate,
+                                                       global_step, 1000)
         # Track learning rate.
         tf.summary.scalar('learning_rate', learning_rate)
         # Now define optimizer function.
