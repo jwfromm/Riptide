@@ -219,6 +219,14 @@ class SpecialBatchNormalization(keras.layers.BatchNormalization):
         return super(SpecialBatchNormalization, self).call(inputs, training)
 
 
+class ResidualConnect(Layer):
+    def __init__(self, *args, **kwargs):
+        super(ResidualConnect, self).__init__()
+
+    def call(self, inputs):
+        return tf.concat(inputs, axis=-1)
+
+
 def BatchNormalization(*args, **kwargs):
     scope = Config.current
     if scope.use_bn:
