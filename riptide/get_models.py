@@ -1,18 +1,19 @@
 from .models import cifar_resnet
 from .models import resnetv1b as resnet
-from .models import vgg11, vggnet
+from .models import vgg11, vggnet, resnet18, alexnet
 from .binary.models import q_cifar_resnet
 from .binary.models import q_resnetv1b as q_resnet
 
 
 def get_model(name, **kwargs):
     models = {
-        'q_resnet18': q_resnet.resnet18_v1b,
+        'alexnet': alexnet.alexnet,
+        'q_resnet18': resnet18.resnet18,
         'q_resnet34': q_resnet.resnet34_v1b,
         'q_resnet50': q_resnet.resnet50_v1b,
         'q_resnet101': q_resnet.resnet101_v1b,
         'q_resnet152': q_resnet.resnet152_v1b,
-        'resnet18': resnet.resnet18_v1b,
+        'resnet18': resnet18.resnet18,
         'resnet34': resnet.resnet34_v1b,
         'resnet50': resnet.resnet50_v1b,
         'resnet101': resnet.resnet101_v1b,
