@@ -94,6 +94,7 @@ RUN pip --no-cache-dir install \
         h5py \
         xgboost \
         psutil \
+        seaborn \
         mxnet
 
 # Set up some convenience stuff
