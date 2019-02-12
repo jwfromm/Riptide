@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras as keras
 from .binary_funcs import *
+from functools import partial
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras import constraints
 from tensorflow.python.keras import initializers
@@ -58,13 +59,16 @@ class Config(object):
                  use_bn=True,
                  use_maxpool=True,
                  use_act=True,
+                 bipolar=False,
                  shiftnorm_scale=1.0,
                  use_qadd=False):
+        actQ = partial(actQ, bipolar=bipolar)
         self.actQ = actQ if actQ else lambda x: x
         self.weightQ = weightQ if weightQ else lambda x: x
         self.bits = bits
         self.use_bn = use_bn
         self.use_act = use_act
+        self.bipolar = bipolar
         self.shiftnorm_scale = shiftnorm_scale
         self.use_qadd = use_qadd
         self.use_maxpool = use_maxpool
@@ -86,6 +90,7 @@ class BinaryConv2D(keras.layers.Conv2D):
         self.weightQ = self.scope.weightQ
         self.bits = self.scope.bits
         self.use_act = self.scope.use_act
+        self.bipolar = self.scope.bipolar
 
     def call(self, inputs):
         with tf.name_scope("actQ"):
@@ -99,7 +104,16 @@ class BinaryConv2D(keras.layers.Conv2D):
             kernel = self.weightQ(self.kernel)
             tf.summary.histogram('weights', self.kernel)
             tf.summary.histogram('binary_weights', kernel)
+
+        # If bipolar quantization is used, pad with -1 instead of 0.
+        if self.bipolar:
+            inputs = inputs + 1.0
+
         outputs = self._convolution_op(inputs, kernel)
+
+        if self.bipolar:
+            readjust_val = -1.0 * tf.reduce_sum(kernel, axis=[0,1,2])
+            outputs = outputs + readjust_val
 
         if self.use_bias:
             if self.data_format == 'channels_first':

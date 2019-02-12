@@ -180,12 +180,20 @@ def HWGQuantize(x, clusters):
 
 # Assumes input is clipped to [0, 1]
 @tf.custom_gradient
-def DQ(x, bits):
+def DQ(x, bits, bipolar):
     # Use small adjustment to avoid rounding inconsistency.
+    if bipolar:
+        # Convert incoming [-1, 1] range to [0, 1]
+        x = (x + 1.0) / 2.0
+
     epsilon = 1e-5
     # Round to nearest linear bin in [0, 1].
     output = (1.0 /
               (2.0**bits - 1.0)) * tf.round((2.0**bits - 1.0) * x + epsilon)
+
+    if bipolar:
+        # Deconvert back to [-1, 1]
+        output = (output - 0.5) * 2.0
 
     # Pass through gradient.
     def grad_fn(dy):
@@ -194,11 +202,15 @@ def DQ(x, bits):
     return output, grad_fn
 
 
-def DQuantize(x, bits):
+def DQuantize(x, bits, bipolar=False):
     # Apply clipping in [0, 1] with associated gradient.
-    x = tf.clip_by_value(x, 0, 1)
+    if bipolar:
+        x = tf.clip_by_value(x, -1, 1)
+    else:
+        x = tf.clip_by_value(x, 0, 1)
+
     # Quantize linearlly.
-    return DQ(x, bits)
+    return DQ(x, bits, bipolar)
 
 
 def DQuantizeW(x, bits):
@@ -206,9 +218,15 @@ def DQuantizeW(x, bits):
     return (2. * DQuantize(x, bits)) - 1.0
 
 
-def DQuantizeBits(x, bits):
-    x = tf.clip_by_value(x, 0, 1)
+def DQuantizeBits(x, bits, bipolar=False):
+    if bipolar:
+        x = tf.clip_by_value(x, -1, 1)
+    else:
+        x = tf.clip_by_value(x, 0, 1)
     epsilon = 1e-5
+    if bipolar:
+        # Convert from [-1, 1] to [0, 1] for rounding
+        x = (x + 1.0) / 2.0
     return tf.round(x * (2.0**bits - 1.0) + epsilon)
 
 
