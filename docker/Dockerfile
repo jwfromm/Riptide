@@ -94,7 +94,8 @@ RUN pip --no-cache-dir install \
         h5py \
         xgboost \
         psutil \
-        mxnet
+        seaborn \
+        lime 
 
 # Set up some convenience stuff
 COPY .vim /root/.vim
@@ -110,6 +111,7 @@ ENV LC_ALL "C.UTF-8"
 ENV PYTHONPATH /root/models/research:$PYTHONPATH
 ENV PYTHONPATH /root/models/:$PYTHONPATH
 ENV PYTHONPATH /root/Riptide:$PYTHONPATH
+ENV PYTHONPATH /root/FoveNet:$PYTHONPATH
 
 # Make root bazel workspace
 RUN touch /root/WORKSPACE
