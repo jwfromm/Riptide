@@ -12,7 +12,7 @@ def adam_piecewise(global_step, batch_size):
     epoch_boundaries = [56, 64]
     steps_per_epoch = _NUM_IMAGES / batch_size
     step_boundaries = [int(x * steps_per_epoch) for x in epoch_boundaries]
-    lr_schedule = tf.train.piecewise_constant(
+    lr_schedule = tf.train.piecewise_constant_decay(
         global_step, boundaries=step_boundaries, values=lr_values)
     optimizer = tf.train.AdamOptimizer(learning_rate=lr_schedule, epsilon=1e-5)
     return optimizer, lr_schedule

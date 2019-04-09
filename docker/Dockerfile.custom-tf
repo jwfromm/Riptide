@@ -76,6 +76,7 @@ COPY run_jupyter.sh /
 
 # Set up Bazel.
 
+RUN echo "REBUILD"
 # Running bazel inside a `docker build` command causes trouble, cf:
 #   https://github.com/bazelbuild/bazel/issues/134
 # The easiest solution is to set up a bazelrc file forcing --batch.
@@ -85,7 +86,7 @@ RUN echo "startup --batch" >>/etc/bazel.bazelrc
 RUN echo "build --spawn_strategy=standalone --genrule_strategy=standalone" \
     >>/etc/bazel.bazelrc
 # Install the most recent bazel release.
-ENV BAZEL_VERSION 0.15.0
+ENV BAZEL_VERSION 0.21.0
 WORKDIR /
 RUN mkdir /bazel && \
     cd /bazel && \
@@ -98,7 +99,7 @@ RUN mkdir /bazel && \
 
 # Download and build TensorFlow.
 WORKDIR /tensorflow
-RUN git clone --branch=r1.12 --depth 1 https://github.com/tensorflow/tensorflow.git .
+RUN git clone --branch=r1.13 --depth 1 https://github.com/tensorflow/tensorflow.git .
 
 # Configure the build for our CUDA configuration.
 ENV CI_BUILD_PYTHON python

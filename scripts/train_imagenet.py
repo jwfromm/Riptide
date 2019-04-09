@@ -188,7 +188,9 @@ def main(argv):
     session_config = tf.ConfigProto(
         inter_op_parallelism_threads=op_threads,
         intra_op_parallelism_threads=op_threads,
-        allow_soft_placement=True)
+        allow_soft_placement=True,
+    )
+    session_config.gpu_options.allow_growth = True
     run_config = tf.estimator.RunConfig(
         save_summary_steps=500,
         log_step_count_steps=500,
