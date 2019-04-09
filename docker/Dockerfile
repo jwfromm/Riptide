@@ -84,7 +84,7 @@ RUN pip --no-cache-dir install \
         docopt \
         tensorboard \
         tensorflow-hub \
-        tensorflow-probability \
+        tensorflow-probability=0.5.0 \
         #tensorflow-data-validation \
         #tensorflow-transform \
         #tensorflow-model-analysis \

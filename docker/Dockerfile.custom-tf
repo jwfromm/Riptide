@@ -4,8 +4,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         curl \
         git \
-        libnccl2 \
-        libnccl-dev \
         libcurl3-dev \
         libfreetype6-dev \
         libhdf5-serial-dev \
@@ -66,8 +64,7 @@ RUN pip --no-cache-dir install \
         sklearn \
         pandas \
         setuptools \
-        virtualenv \
-        apache-beam[gcp]
+        virtualenv
 
 # Set up our notebook config.
 COPY jupyter_notebook_config.py /root/.jupyter/
@@ -88,7 +85,7 @@ RUN echo "startup --batch" >>/etc/bazel.bazelrc
 RUN echo "build --spawn_strategy=standalone --genrule_strategy=standalone" \
     >>/etc/bazel.bazelrc
 # Install the most recent bazel release.
-ENV BAZEL_VERSION 0.20.0
+ENV BAZEL_VERSION 0.15.0
 WORKDIR /
 RUN mkdir /bazel && \
     cd /bazel && \
@@ -101,7 +98,7 @@ RUN mkdir /bazel && \
 
 # Download and build TensorFlow.
 WORKDIR /tensorflow
-RUN git clone --branch=r1.13 https://github.com/tensorflow/tensorflow.git .
+RUN git clone --branch=r1.12 --depth 1 https://github.com/tensorflow/tensorflow.git .
 
 # Configure the build for our CUDA configuration.
 ENV CI_BUILD_PYTHON python

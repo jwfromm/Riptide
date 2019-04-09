@@ -129,8 +129,12 @@ def main(argv):
             tf.nn.l2_loss(tf.cast(v, tf.float32))
             for v in tf.trainable_variables() if exclude_batch_norm(v.name)
         ])
+        model_losses = model.get_losses_for(features) + model.get_losses_for(
+            None)
         # Compute summed loss.
         loss = cross_entropy + l2_loss
+        if model_losses:
+            loss += tf.math.add_n(model_losses)
         # Log model losses.
         tf.summary.scalar('l2_loss', l2_loss)
         tf.summary.scalar('cross_entropy', cross_entropy)
@@ -161,7 +165,8 @@ def main(argv):
             learning_rate=learning_rate,
             momentum=FLAGS.momentum,
             use_nesterov=False)
-        update_ops = model.get_updates_for(features)
+        update_ops = model.get_updates_for(features) + model.get_updates_for(
+            None)
         with tf.control_dependencies(update_ops):
             train_op = optimizer.minimize(loss=loss, global_step=global_step)
         # Keep track of training accuracy.
