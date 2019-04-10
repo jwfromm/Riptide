@@ -62,7 +62,8 @@ class Config(object):
                  bipolar=False,
                  shiftnorm_scale=1.0,
                  use_qadd=False):
-        actQ = partial(actQ, bipolar=bipolar)
+        if actQ is not None:
+            actQ = partial(actQ, bipolar=bipolar)
         self.actQ = actQ if actQ else lambda x: x
         self.weightQ = weightQ if weightQ else lambda x: x
         self.bits = bits
@@ -112,7 +113,7 @@ class BinaryConv2D(keras.layers.Conv2D):
         outputs = self._convolution_op(inputs, kernel)
 
         if self.bipolar:
-            readjust_val = -1.0 * tf.reduce_sum(kernel, axis=[0,1,2])
+            readjust_val = -1.0 * tf.reduce_sum(kernel, axis=[0, 1, 2])
             outputs = outputs + readjust_val
 
         if self.use_bias:
