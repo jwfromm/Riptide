@@ -40,38 +40,35 @@ def main(argv):
     op_threads, num_workers = setup_gpu_threadpool(len(FLAGS.gpus.split(',')))
     num_gpus = len(FLAGS.gpus.split(','))
     # Set up the data input functions.
-    train_preprocess = partial(
-        preprocess_image,
-        height=FLAGS.image_size,
-        width=FLAGS.image_size,
-        is_training=True)
-    eval_preprocess = partial(
-        preprocess_image,
-        height=FLAGS.image_size,
-        width=FLAGS.image_size,
-        is_training=False)
+    train_preprocess = partial(preprocess_image,
+                               height=FLAGS.image_size,
+                               width=FLAGS.image_size,
+                               is_training=True)
+    eval_preprocess = partial(preprocess_image,
+                              height=FLAGS.image_size,
+                              width=FLAGS.image_size,
+                              is_training=False)
 
     def train_input_fn():
-        ds = imagerecord_dataset(
-            FLAGS.data_path,
-            FLAGS.batch_size,
-            is_training=True,
-            preprocess=train_preprocess,
-            num_workers=num_workers)
+        ds = imagerecord_dataset(FLAGS.data_path,
+                                 FLAGS.batch_size,
+                                 is_training=True,
+                                 preprocess=train_preprocess,
+                                 num_workers=num_workers)
         return ds.repeat(FLAGS.epochs)
 
     def eval_input_fn():
-        return imagerecord_dataset(
-            FLAGS.data_path,
-            FLAGS.batch_size,
-            is_training=False,
-            preprocess=eval_preprocess,
-            num_workers=num_workers)
+        ds = imagerecord_dataset(FLAGS.data_path,
+                                 FLAGS.batch_size,
+                                 is_training=False,
+                                 preprocess=eval_preprocess,
+                                 num_workers=num_workers)
+        return ds.repeat(1)
 
     # Set up estimaor model function.
     def model_fn(features, labels, mode):
         # Generate summary for input images.
-        tf.summary.image('images', features, max_outputs=4)
+        #tf.summary.image('images', features, max_outputs=4)
 
         if FLAGS.quantize:
             a_bits = FLAGS.a_bits
@@ -100,12 +97,12 @@ def main(argv):
         }
 
         if mode == tf.estimator.ModeKeys.PREDICT:
-            return tf.estimator.EstimatorSpec(
-                mode=mode, predictions=predictions)
+            return tf.estimator.EstimatorSpec(mode=mode,
+                                              predictions=predictions)
 
         # Calcuate loss for train and eval modes.
-        cross_entropy = tf.losses.sparse_softmax_cross_entropy(
-            labels=labels, logits=logits)
+        cross_entropy = tf.losses.sparse_softmax_cross_entropy(labels=labels,
+                                                               logits=logits)
 
         model_losses = model.get_losses_for(features) + model.get_losses_for(
             None)
@@ -119,17 +116,17 @@ def main(argv):
         # Compute training metrics.
         accuracy = tf.metrics.accuracy(labels, predictions['classes'])
         accuracy_top_5 = tf.metrics.mean(
-            tf.nn.in_top_k(
-                predictions=logits,
-                targets=tf.reshape(labels, [-1]),
-                k=5,
-                name='top_5_op'))
+            tf.nn.in_top_k(predictions=logits,
+                           targets=tf.reshape(labels, [-1]),
+                           k=5,
+                           name='top_5_op'))
         metrics = {'accuracy': accuracy, 'accuracy_top_5': accuracy_top_5}
 
         # Ready to configure the EVAL mode specification.
         if mode == tf.estimator.ModeKeys.EVAL:
-            return tf.estimator.EstimatorSpec(
-                mode=mode, loss=loss, eval_metric_ops=metrics)
+            return tf.estimator.EstimatorSpec(mode=mode,
+                                              loss=loss,
+                                              eval_metric_ops=metrics)
 
         # Otherwise, we must be doing training.
         global_step = tf.train.get_or_create_global_step()
@@ -145,8 +142,10 @@ def main(argv):
         tf.summary.scalar('train_accuracy', accuracy[1])
         tf.summary.scalar('train_accuracy_top_5', accuracy_top_5[1])
 
-        return tf.estimator.EstimatorSpec(
-            mode=mode, loss=loss, train_op=train_op, eval_metric_ops=metrics)
+        return tf.estimator.EstimatorSpec(mode=mode,
+                                          loss=loss,
+                                          train_op=train_op,
+                                          eval_metric_ops=metrics)
 
     # Now we're ready to configure our estimator and train.
     # Determine proper name for this model.
@@ -157,21 +156,20 @@ def main(argv):
         strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=num_gpus)
     else:
         strategy = None
-    session_config = tf.ConfigProto(
-        inter_op_parallelism_threads=op_threads,
-        intra_op_parallelism_threads=op_threads,
-        allow_soft_placement=True)
-    session_config.gpu_options.allow_growth = True
-    run_config = tf.estimator.RunConfig(
-        save_summary_steps=500,
-        log_step_count_steps=500,
-        save_checkpoints_secs=3600,
-        train_distribute=strategy,
-        session_config=session_config)
-    classifier = tf.estimator.Estimator(
-        model_fn=model_fn, model_dir=full_model_path, config=run_config)
-    train_spec = tf.estimator.TrainSpec(
-        input_fn=train_input_fn, max_steps=None)
+    session_config = tf.ConfigProto(inter_op_parallelism_threads=op_threads,
+                                    intra_op_parallelism_threads=op_threads,
+                                    allow_soft_placement=True)
+    #session_config.gpu_options.allow_growth = True
+    run_config = tf.estimator.RunConfig(save_summary_steps=500,
+                                        log_step_count_steps=500,
+                                        save_checkpoints_secs=3600,
+                                        train_distribute=strategy,
+                                        session_config=session_config)
+    classifier = tf.estimator.Estimator(model_fn=model_fn,
+                                        model_dir=full_model_path,
+                                        config=run_config)
+    train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn,
+                                        max_steps=None)
     eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn)
     tf.estimator.train_and_evaluate(classifier, train_spec, eval_spec)
 
