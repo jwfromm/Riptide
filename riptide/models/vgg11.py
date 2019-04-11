@@ -94,6 +94,7 @@ class vgg11(tf.keras.Model):
         self.avgpool = nn.GlobalAveragePooling2D()
         self.classifier = nn.BinaryDense(classes, use_bias=False)
         self.scalu = nn.Scalu()
+        self.softmax = nn.Activation('softmax')
 
     def call(self, inputs, training=None, debug=False):
         layers = []
@@ -162,7 +163,9 @@ class vgg11(tf.keras.Model):
         layers.append(x)
         x = self.scalu(x)
         layers.append(x)
-        tf.summary.histogram('output', x)
+        x = self.softmax(x)
+        layers.append(x)
+        tf.compat.v1.summary.histogram('output', x)
 
         if debug:
             return layers

@@ -61,6 +61,7 @@ class alexnet(tf.keras.models.Model):
 
         # Output
         self.d8 = nn.Dense(1000, kernel_regularizer=l2(l2_reg))
+        self.softmax = nn.Activation('softmax')
 
     def call(self, inputs, training=True):
         x = self.c1(inputs)
@@ -98,5 +99,6 @@ class alexnet(tf.keras.models.Model):
         x = self.do7(x, training=training)
 
         x = self.d8(x)
+        x = self.softmax(x)
 
         return x

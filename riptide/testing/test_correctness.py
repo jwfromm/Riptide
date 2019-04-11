@@ -35,7 +35,7 @@ class CorrectnessTest(tf.test.TestCase):
                 elif 'shift_normalization' in model.layers[i].name:
                     nnvm_output = verify_nnvm_vgg.run(
                         test_input, stop_layer=model.layers[i].name)
-                    layer_np = get_numpy(sess, converted_layers[i + 1])
+                    layer_np = get_numpy(sess, converted_layers[i])
 
                     correct = np.allclose(layer_np, nnvm_output, rtol=1e-3)
                     if not correct:

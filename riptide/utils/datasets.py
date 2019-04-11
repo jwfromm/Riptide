@@ -2,7 +2,6 @@ import os
 import tensorflow as tf
 from functools import partial
 from random import shuffle
-from tensorflow.contrib.data.python.ops import threadpool
 
 
 def _get_shard_dataset(record_path, split='train'):
@@ -14,22 +13,22 @@ def _get_shard_dataset(record_path, split='train'):
 def _decode_jpeg(image_buffer, size, scope=None):
     with tf.name_scope(
             values=[image_buffer], name=scope, default_name='decode_jpeg'):
-        image = tf.image.decode_jpeg(image_buffer, channels=3)
-        image = tf.image.resize_images(image, (size, size))
+        image = tf.io.decode_jpeg(image_buffer, channels=3)
+        image = tf.image.resize(image, (size, size))
         image = tf.image.convert_image_dtype(image, dtype=tf.float32)
     return image
 
 
 def _decode_imagenet(proto, preprocess):
     feature_map = {
-        'image': tf.FixedLenFeature([], dtype=tf.string, default_value=''),
-        'label': tf.FixedLenFeature([1], dtype=tf.int64, default_value=-1),
+        'image': tf.io.FixedLenFeature([], dtype=tf.string, default_value=''),
+        'label': tf.io.FixedLenFeature([1], dtype=tf.int64, default_value=-1),
         #'label_name':
         #tf.FixedLenFeature([], dtype=tf.string, default_value=''),
     }
 
-    parsed_features = tf.parse_single_example(proto, feature_map)
-    features = tf.image.decode_jpeg(parsed_features['image'], channels=3)
+    parsed_features = tf.io.parse_single_example(proto, feature_map)
+    features = tf.io.decode_jpeg(parsed_features['image'], channels=3)
     labels = parsed_features['label']
 
     if preprocess != None:
@@ -58,15 +57,13 @@ def imagerecord_dataset(root,
     decode_fn = partial(_decode_imagenet, preprocess=preprocess)
     imagenet_ds = imagenet_ds.apply(
         tf.data.experimental.map_and_batch(
-            map_func=decode_fn,
-            batch_size=batch_size,
-            num_parallel_batches=num_workers))
-    imagenet_ds = imagenet_ds.prefetch(buffer_size=tf.contrib.data.AUTOTUNE)
+            map_func=decode_fn, batch_size=batch_size, num_parallel_batches=4))
+    imagenet_ds = imagenet_ds.prefetch(
+        buffer_size=tf.data.experimental.AUTOTUNE)
     # Set up extra threadpool resources
-    imagenet_ds = threadpool.override_threadpool(
-        imagenet_ds,
-        threadpool.PrivateThreadPool(
-            num_workers, display_name='input_pipeline_thread_pool'))
+    options = tf.data.Options()
+    options.experimental_threading.private_threadpool_size = num_workers
+    imagenet_ds = imagenet_ds.with_options(options)
     return imagenet_ds
 
 

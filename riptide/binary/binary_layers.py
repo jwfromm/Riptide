@@ -95,16 +95,16 @@ class BinaryConv2D(keras.layers.Conv2D):
 
     def call(self, inputs):
         with tf.name_scope("actQ"):
-            tf.summary.histogram('prebinary_activations', inputs)
+            tf.compat.v1.summary.histogram('prebinary_activations', inputs)
             if self.bits is not None:
                 inputs = self.actQ(inputs, self.bits)
             else:
                 inputs = self.actQ(inputs)
-            tf.summary.histogram('binary_activations', inputs)
+            tf.compat.v1.summary.histogram('binary_activations', inputs)
         with tf.name_scope("weightQ"):
             kernel = self.weightQ(self.kernel)
-            tf.summary.histogram('weights', self.kernel)
-            tf.summary.histogram('binary_weights', kernel)
+            tf.compat.v1.summary.histogram('weights', self.kernel)
+            tf.compat.v1.summary.histogram('binary_weights', kernel)
 
         # If bipolar quantization is used, pad with -1 instead of 0.
         if self.bipolar:
@@ -142,16 +142,16 @@ class BinaryDense(keras.layers.Dense):
     def call(self, inputs):
         inputs = tf.convert_to_tensor(inputs, dtype=self.dtype)
         with tf.name_scope("actQ"):
-            tf.summary.histogram('prebinary_activations', inputs)
+            tf.compat.v1.summary.histogram('prebinary_activations', inputs)
             if self.bits is not None:
                 inputs = self.actQ(inputs, self.bits)
             else:
                 inputs = self.actQ(inputs)
-            tf.summary.histogram('binary_activations', inputs)
+            tf.compat.v1.summary.histogram('binary_activations', inputs)
         with tf.name_scope("weightQ"):
             kernel = self.weightQ(self.kernel)
-            tf.summary.histogram('weights', self.kernel)
-            tf.summary.histogram('binary_weights', kernel)
+            tf.compat.v1.summary.histogram('weights', self.kernel)
+            tf.compat.v1.summary.histogram('binary_weights', kernel)
         rank = common_shapes.rank(inputs)
         if rank > 2:
             # Broadcasting is required for the inputs.

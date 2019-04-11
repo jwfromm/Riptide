@@ -6,29 +6,33 @@ from riptide.get_models import get_model
 from riptide.utils.datasets import imagerecord_dataset
 from riptide.utils.thread_helper import setup_gpu_threadpool
 from riptide.binary.binary_layers import Config, DQuantize, XQuantize
-from slim.preprocessing.inception_preprocessing import preprocess_image
+from riptide.utils.preprocessing.inception_preprocessing import preprocess_image
 
-FLAGS = tf.flags.FLAGS
+from absl import app
+from absl import flags
+from absl import logging
 
-tf.flags.DEFINE_string('model_dir', '/data/jwfromm/models',
-                       'Directory to save models in.')
-tf.flags.DEFINE_string('model', '', 'Name of model to train, must be set.')
-tf.flags.DEFINE_string(
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string('model_dir', '/data/jwfromm/models',
+                    'Directory to save models in.')
+flags.DEFINE_string('model', '', 'Name of model to train, must be set.')
+flags.DEFINE_string(
     'experiment', '',
     'Suffix to add to model name, should describe purpose of run.')
-tf.flags.DEFINE_string('data_path', '/data/imagenet/tfrecords',
-                       'Directory containing tfrecords to load.')
-tf.flags.DEFINE_string('gpus', '', 'Comma seperated list of GPUS to run on.')
-tf.flags.DEFINE_integer('epochs', 480, 'Number of epochs to train.')
-tf.flags.DEFINE_integer('batch_size', 64, 'Size of each minibatch.')
-tf.flags.DEFINE_integer('image_size', 224,
-                        'Height and Width of processed images.')
-tf.flags.DEFINE_float('learning_rate', .0128, 'Starting learning rate.')
-tf.flags.DEFINE_float('wd', 1e-4, 'Weight decay loss coefficient.')
-tf.flags.DEFINE_float('momentum', 0.9, 'Momentum used for optimizer.')
-tf.flags.DEFINE_bool('binary', False, 'Use a binary network.')
-tf.flags.DEFINE_float('bits', 2.0,
-                      'Number of activation bits to use for binary model.')
+flags.DEFINE_string('data_path', '/data/imagenet/tfrecords',
+                    'Directory containing tfrecords to load.')
+flags.DEFINE_string('gpus', '', 'Comma seperated list of GPUS to run on.')
+flags.DEFINE_integer('epochs', 480, 'Number of epochs to train.')
+flags.DEFINE_integer('batch_size', 64, 'Size of each minibatch.')
+flags.DEFINE_integer('image_size', 224,
+                     'Height and Width of processed images.')
+flags.DEFINE_float('learning_rate', .0128, 'Starting learning rate.')
+flags.DEFINE_float('wd', 1e-4, 'Weight decay loss coefficient.')
+flags.DEFINE_float('momentum', 0.9, 'Momentum used for optimizer.')
+flags.DEFINE_bool('binary', 0, 'Use a binary network.')
+flags.DEFINE_float('bits', 2.0,
+                   'Number of activation bits to use for binary model.')
 
 
 def main(argv):
@@ -69,7 +73,7 @@ def main(argv):
     # Set up estimaor model function.
     def model_fn(features, labels, mode):
         # Generate summary for input images.
-        tf.summary.image('images', features, max_outputs=4)
+        tf.compat.v1.summary.image('images', features, max_outputs=4)
         if FLAGS.binary:
             actQ = DQuantize
             weightQ = XQuantize
@@ -97,95 +101,70 @@ def main(argv):
         with config:
             model = get_model(FLAGS.model)
 
+        global_step = tf.compat.v1.train.get_or_create_global_step()
+        learning_rate = tf.compat.v1.train.cosine_decay_restarts(
+            FLAGS.learning_rate, global_step, 1000)
+        tf.compat.v1.summary.scalar('learning_rate', learning_rate)
+        optimizer = tf.compat.v1.train.MomentumOptimizer(
+            learning_rate=learning_rate,
+            momentum=FLAGS.momentum,
+            use_nesterov=False)
+        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
+
         # Get proper mode for batchnorm and dropout, must be python bool.
-        if mode == tf.estimator.ModeKeys.TRAIN:
-            is_training = True
-        else:
-            is_training = False
+        training = (mode == tf.estimator.ModeKeys.TRAIN)
 
-        logits = model(features, training=is_training)
-        predictions = {
-            'classes': tf.argmax(input=logits, axis=1),
-            'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
-        }
+        predictions = model(features, training=training)
 
-        if mode == tf.estimator.ModeKeys.PREDICT:
-            return tf.estimator.EstimatorSpec(
-                mode=mode, predictions=predictions)
-
-        # Calcuate loss for train and eval modes.
-        cross_entropy = tf.losses.sparse_softmax_cross_entropy(
-            labels=labels, logits=logits)
-
-        # Add weight decay.
-        # Simple filter function to prevent decay of batchnorm parameters.
-        def exclude_batch_norm(name):
-            return (('batch_normalization' not in name)
-                    and ('shift_normalization' not in name)
-                    and ('scalu' not in name)
-                    and (('unbinarized' in name) or normal))
-
-        l2_loss = FLAGS.wd * tf.add_n([
-            tf.nn.l2_loss(tf.cast(v, tf.float32))
-            for v in tf.trainable_variables() if exclude_batch_norm(v.name)
-        ])
-        model_losses = model.get_losses_for(features) + model.get_losses_for(
-            None)
-        # Compute summed loss.
-        loss = cross_entropy + l2_loss
-        if model_losses:
-            loss += tf.math.add_n(model_losses)
-        # Log model losses.
-        tf.summary.scalar('l2_loss', l2_loss)
-        tf.summary.scalar('cross_entropy', cross_entropy)
+        total_loss = loss_fn(labels, predictions)
+        reg_losses = model.get_losses_for(None) + model.get_losses_for(features)
+        if reg_losses:
+            total_loss += tf.math.add_n(reg_losses)
 
         # Compute training metrics.
-        accuracy = tf.metrics.accuracy(labels, predictions['classes'])
-        accuracy_top_5 = tf.metrics.mean(
-            tf.nn.in_top_k(
-                predictions=logits,
+        accuracy = tf.compat.v1.metrics.accuracy(
+            labels=labels,
+            predictions=tf.math.argmax(predictions, axis=-1),
+            name='acc_op')
+        accuracy_top_5 = tf.compat.v1.metrics.mean(
+            tf.math.in_top_k(
+                predictions=predictions,
                 targets=tf.reshape(labels, [-1]),
                 k=5,
                 name='top_5_op'))
         metrics = {'accuracy': accuracy, 'accuracy_top_5': accuracy_top_5}
 
-        # Ready to configure the EVAL mode specification.
-        if mode == tf.estimator.ModeKeys.EVAL:
-            return tf.estimator.EstimatorSpec(
-                mode=mode, loss=loss, eval_metric_ops=metrics)
-
-        # Otherwise, we must be doing training.
-        global_step = tf.train.get_or_create_global_step()
-        learning_rate = tf.train.cosine_decay_restarts(FLAGS.learning_rate,
-                                                       global_step, 1000)
-        # Track learning rate.
-        tf.summary.scalar('learning_rate', learning_rate)
         # Now define optimizer function.
-        optimizer = tf.train.MomentumOptimizer(
-            learning_rate=learning_rate,
-            momentum=FLAGS.momentum,
-            use_nesterov=False)
         update_ops = model.get_updates_for(features) + model.get_updates_for(
             None)
         with tf.control_dependencies(update_ops):
-            train_op = optimizer.minimize(loss=loss, global_step=global_step)
+            train_op = optimizer.minimize(
+                total_loss,
+                var_list=model.trainable_variables,
+                global_step=global_step)
         # Keep track of training accuracy.
-        tf.summary.scalar('train_accuracy', accuracy[1])
-        tf.summary.scalar('train_accuracy_top_5', accuracy_top_5[1])
+        if mode == tf.estimator.ModeKeys.TRAIN:
+            tf.compat.v1.summary.scalar('train_accuracy', accuracy[1])
+            tf.compat.v1.summary.scalar('train_accuracy_top_5',
+                                        accuracy_top_5[1])
 
         return tf.estimator.EstimatorSpec(
-            mode=mode, loss=loss, train_op=train_op, eval_metric_ops=metrics)
+            mode=mode,
+            loss=total_loss,
+            train_op=train_op,
+            eval_metric_ops=metrics)
 
     # Now we're ready to configure our estimator and train.
     # Determine proper name for this model.
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
     full_model_path = os.path.join(FLAGS.model_dir,
                                    "%s_%s" % (FLAGS.model, FLAGS.experiment))
     # Figure out which GPUS to run on.
     if num_gpus > 1:
-        strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=num_gpus)
+        strategy = tf.distribute.MirroredStrategy(num_gpus=num_gpus)
     else:
         strategy = None
-    session_config = tf.ConfigProto(
+    session_config = tf.compat.v1.ConfigProto(
         inter_op_parallelism_threads=op_threads,
         intra_op_parallelism_threads=op_threads,
         allow_soft_placement=True,
@@ -206,4 +185,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    tf.app.run()
+    app.run(main)

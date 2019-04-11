@@ -2,20 +2,20 @@ import os
 import multiprocessing
 import tensorflow as tf
 
+from absl import logging
+
 
 def setup_gpu_threadpool(num_gpus):
     cpu_count = multiprocessing.cpu_count()
-    tf.logging.info('Logical CPU cores: %d' % cpu_count)
+    logging.info('Logical CPU cores: %d' % cpu_count)
 
     # Sets up thread pool for each GPU.
     per_gpu_thread_count = 1
     total_gpu_thread_count = per_gpu_thread_count * num_gpus
     os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
     os.environ['TF_GPU_THREAD_COUNT'] = str(per_gpu_thread_count)
-    tf.logging.info(
-        'TF_GPU_THREAD_COUNT: %s' % os.environ['TF_GPU_THREAD_COUNT'])
-    tf.logging.info(
-        'TF_GPU_THREAD_MODE: %s' % os.environ['TF_GPU_THREAD_MODE'])
+    logging.info('TF_GPU_THREAD_COUNT: %s' % os.environ['TF_GPU_THREAD_COUNT'])
+    logging.info('TF_GPU_THREAD_MODE: %s' % os.environ['TF_GPU_THREAD_MODE'])
 
     # Reduces general thread pool by number of threads used for GPU pool.
     main_thread_count = cpu_count - total_gpu_thread_count
