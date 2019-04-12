@@ -161,7 +161,7 @@ def main(argv):
                                    "%s_%s" % (FLAGS.model, FLAGS.experiment))
     # Figure out which GPUS to run on.
     if num_gpus > 1:
-        strategy = tf.distribute.MirroredStrategy(num_gpus=num_gpus)
+        strategy = tf.distribute.MirroredStrategy()
     else:
         strategy = None
     session_config = tf.compat.v1.ConfigProto(

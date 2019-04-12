@@ -5,7 +5,7 @@ from .bit_approximations import load_clusters, load_bits
 
 
 def log2(x):
-    return tf.log(x) / tf.log(2.0)
+    return tf.math.log(x) / tf.math.log(2.0)
 
 
 @tf.custom_gradient
@@ -182,22 +182,20 @@ def HWGQuantize(x, clusters):
 @tf.custom_gradient
 def DQ(x, bits, bipolar):
     # Use small adjustment to avoid rounding inconsistency.
-    if bipolar:
-        # Convert incoming [-1, 1] range to [0, 1]
-        x = (x + 1.0) / 2.0
+    # Adjust for bipolar if needed.
+    x = tf.cond(bipolar, lambda: (x + 1.0) / 2.0, lambda: x)
 
     epsilon = 1e-5
     # Round to nearest linear bin in [0, 1].
     output = (1.0 /
               (2.0**bits - 1.0)) * tf.round((2.0**bits - 1.0) * x + epsilon)
 
-    if bipolar:
-        # Deconvert back to [-1, 1]
-        output = (output - 0.5) * 2.0
+    # Deconvert back to [-1, 1] if bipolar.
+    output = tf.cond(bipolar, lambda: (output - 0.5) * 2.0, lambda: output)
 
     # Pass through gradient.
     def grad_fn(dy):
-        return [dy, None]
+        return [dy, None, None]
 
     return output, grad_fn
 
@@ -221,12 +219,10 @@ def DQuantizeW(x, bits):
 def DQuantizeBits(x, bits, bipolar=False):
     if bipolar:
         x = tf.clip_by_value(x, -1, 1)
+        x = (x + 1.0) / 2.0
     else:
         x = tf.clip_by_value(x, 0, 1)
-    epsilon = 1e-5
-    if bipolar:
-        # Convert from [-1, 1] to [0, 1] for rounding
-        x = (x + 1.0) / 2.0
+
     return tf.round(x * (2.0**bits - 1.0) + epsilon)
 
 

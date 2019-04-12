@@ -411,7 +411,7 @@ class ShiftNormalization(Layer):
         else:
             param_dtype = self.dtype or tf.float32
 
-        axis_to_dim = {x: input_shape[x].value for x in self.axis}
+        axis_to_dim = {x: input_shape[x] for x in self.axis}
         for x in axis_to_dim:
             if axis_to_dim[x] is None:
                 raise ValueError(
@@ -520,15 +520,15 @@ class ShiftNormalization(Layer):
         self.built = True
 
     def _assign_moving_average(self, variable, value, momentum):
-        with tf.name_scope(None, 'AssignMovingAvg',
+        with tf.compat.v1.name_scope(None, 'AssignMovingAvg',
                            [variable, value, momentum]) as scope:
-            with tf.colocate_with(variable):
+            with tf.compat.v1.colocate_with(variable):
                 decay = tf.convert_to_tensor(1.0 - momentum, name='decay')
                 if decay.dtype != variable.dtype.base_dtype:
                     decay = tf.cast(decay, variable.dtype.base_dtype)
                 update_delta = (
                     variable - tf.cast(value, variable.dtype)) * decay
-                return tf.assign_sub(variable, update_delta, name=scope)
+                return tf.compat.v1.assign_sub(variable, update_delta, name=scope)
 
     def _renorm_correction_and_moments(self, mean, variance, training):
         """Returns the correction and update values for renorm."""
@@ -618,7 +618,7 @@ class ShiftNormalization(Layer):
         # Broadcasting only necessary for single-axis batch norm where the axis is
         # not the last dimension
         broadcast_shape = [1] * ndims
-        broadcast_shape[self.axis[0]] = input_shape[self.axis[0]].value
+        broadcast_shape[self.axis[0]] = input_shape[self.axis[0]]
 
         def _broadcast(v):
             if (v is not None and len(v.get_shape()) != ndims
@@ -643,7 +643,7 @@ class ShiftNormalization(Layer):
             # but not a constant. However, this makes the code simpler.
             keep_dims = len(self.axis) > 1
 
-            mean, variance = tf.nn.moments(
+            mean, variance = tf.compat.v1.nn.moments(
                 inputs, reduction_axes, keep_dims=keep_dims)
 
             # When norming the output of a binary dense layer,
