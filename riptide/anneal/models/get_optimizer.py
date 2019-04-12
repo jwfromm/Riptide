@@ -10,6 +10,12 @@ def adam_piecewise(global_step, batch_size, num_gpus):
     batch_size = batch_size * num_gpus
 
     starting_lr = 1e-4
+
+    # Adjust starting lr for batch size.
+    batch_denom = 128.
+    lr_adjustment = batch_size / batch_denom
+    starting_lr = starting_lr * lr_adjustment
+
     lr_decay = 0.2
     lr_values = [
         starting_lr, starting_lr * lr_decay, starting_lr * lr_decay * lr_decay
