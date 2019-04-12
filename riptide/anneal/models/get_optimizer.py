@@ -3,7 +3,12 @@ import tensorflow as tf
 _NUM_IMAGES = 1281167
 
 
-def adam_piecewise(global_step, batch_size):
+def adam_piecewise(global_step, batch_size, num_gpus):
+    if num_gpus == 0:
+        num_gpus = 1
+
+    batch_size = batch_size * num_gpus
+
     starting_lr = 1e-4
     lr_decay = 0.2
     lr_values = [
@@ -14,14 +19,14 @@ def adam_piecewise(global_step, batch_size):
     step_boundaries = [int(x * steps_per_epoch) for x in epoch_boundaries]
     lr_schedule = tf.compat.v1.train.piecewise_constant_decay(
         global_step, boundaries=step_boundaries, values=lr_values)
-    optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=lr_schedule,
-                                                 epsilon=1e-5)
+    optimizer = tf.compat.v1.train.AdamOptimizer(
+        learning_rate=lr_schedule, epsilon=1e-5)
     return optimizer, lr_schedule
 
 
-def get_optimizer(name, global_step, batch_size):
+def get_optimizer(name, global_step, batch_size, num_gpus=1):
     models = {
         'alexnet': adam_piecewise,
     }
 
-    return models[name](global_step, batch_size)
+    return models[name](global_step, batch_size, num_gpus)
