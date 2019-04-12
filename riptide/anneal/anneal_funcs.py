@@ -40,18 +40,17 @@ class PACT(tf.keras.layers.Layer):
             self.alpha = self.add_variable(
                 'alpha',
                 shape=[],
-                initializer=tf.keras.initializers.Constant(
-                    [10.], dtype=tf.float32),
+                initializer=tf.initializers.Constant([10.]),
                 regularizer=tf.keras.regularizers.l2(0.0002))
 
     def call(self, inputs):
         if self.quantize:
             outputs = AlphaClip(inputs, self.alpha)
-            tf.summary.histogram('alpha', self.alpha)
+            tf.compat.v1.summary.histogram('alpha', self.alpha)
             with tf.name_scope('QA'):
                 outputs = AlphaQuantize(outputs, self.alpha, self.bits)
-                tf.summary.histogram('activation', inputs)
-                tf.summary.histogram('quantized_activation', outputs)
+                tf.compat.v1.summary.histogram('activation', inputs)
+                tf.compat.v1.summary.histogram('quantized_activation', outputs)
         else:
             outputs = tf.nn.relu(inputs)
         return outputs
@@ -111,8 +110,8 @@ class SAWBConv2D(tf.keras.layers.Conv2D):
             # Quantize kernel
             with tf.name_scope("QW"):
                 kernel = SAWBQuantize(self.kernel, alpha, self.bits)
-                tf.summary.histogram("weight", self.kernel)
-                tf.summary.histogram("quantized_weight", kernel)
+                tf.compat.v1.summary.histogram("weight", self.kernel)
+                tf.compat.v1.summary.histogram("quantized_weight", kernel)
         else:
             kernel = self.kernel
 
@@ -149,8 +148,8 @@ class SAWBDense(tf.keras.layers.Dense):
                     tf.abs(self.kernel))
             with tf.name_scope("QW"):
                 kernel = SAWBQuantize(self.kernel, alpha, self.bits)
-                tf.summary.histogram("weight", self.kernel)
-                tf.summary.histogram("quantized_weight", kernel)
+                tf.compat.v1.summary.histogram("weight", self.kernel)
+                tf.compat.v1.summary.histogram("quantized_weight", kernel)
         else:
             kernel = self.kernel
 
