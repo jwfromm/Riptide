@@ -64,15 +64,9 @@ class PACT(tf.keras.layers.Layer):
 
 def get_sawb_coefficients(bits):
     bits = int(bits)
-    assert bits <= 4, "Currently only supports bitwidths up to 4."
-    coefficient_dict = {
-        1: [0., 1.],
-        2: [3.19, -2.14],
-        3: [7.40, -6.66],
-        4: [11.86, -11.68]
-    }
+    coefficient_dict = {1: [0., 1.], 2: [3.19, -2.14], 3: [7.40, -6.66], 4: [11.86, -11.68],
+                        8: [32.27, -35.46], 16: [34.26, -37.60], 32: [40.60, -45.33]}
     return coefficient_dict[bits]
-
 
 @tf.custom_gradient
 def SAWBQuantize(x, alpha, bits):
