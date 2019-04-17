@@ -4,6 +4,7 @@ from .alexnet import alexnet
 def get_model(name, **kwargs):
     models = {
         'alexnet': alexnet,
+        'alexnet_sgd': alexnet,
         #'vgg11': vgg.vgg11,
     }
     name = name.lower()
