@@ -91,6 +91,8 @@ class BinaryConv2D(keras.layers.Conv2D):
         self.weightQ = self.scope.weightQ
         self.bits = self.scope.bits
         self.use_act = self.scope.use_act
+        if self.use_act and self.activation is None:
+            self.activation = Activation('relu')
         self.bipolar = self.scope.bipolar
 
     def call(self, inputs):
@@ -138,6 +140,8 @@ class BinaryDense(keras.layers.Dense):
         self.weightQ = self.scope.weightQ
         self.bits = self.scope.bits
         self.use_act = self.scope.use_act
+        if self.use_act and self.activation is None:
+            self.activation = Activation('relu')
 
     def call(self, inputs):
         inputs = tf.convert_to_tensor(inputs, dtype=self.dtype)

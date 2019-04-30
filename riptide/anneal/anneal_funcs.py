@@ -34,19 +34,24 @@ class PACT(tf.keras.layers.Layer):
         self.scope = Config.current
         self.quantize = self.scope.quantize
         self.bits = self.scope.a_bits
+        self.fixed = self.scope.fixed
 
     def build(self, input_shape):
         if self.quantize:
-            self.alpha = self.add_variable(
-                'alpha',
-                shape=[],
-                initializer=tf.initializers.Constant([10.]),
-                regularizer=tf.keras.regularizers.l2(0.0002))
+            if self.fixed:
+                self.alpha = 1.0
+            else:
+                self.alpha = self.add_variable(
+                    'alpha',
+                    shape=[],
+                    initializer=tf.initializers.Constant([10.]),
+                    regularizer=tf.keras.regularizers.l2(0.0002))
 
     def call(self, inputs):
         if self.quantize:
             outputs = AlphaClip(inputs, self.alpha)
-            tf.compat.v1.summary.histogram('alpha', self.alpha)
+            if not self.fixed:
+                tf.compat.v1.summary.histogram('alpha', self.alpha)
             with tf.name_scope('QA'):
                 outputs = AlphaQuantize(outputs, self.alpha, self.bits)
                 tf.compat.v1.summary.histogram('activation', inputs)

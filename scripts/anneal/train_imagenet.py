@@ -81,12 +81,14 @@ def main(argv):
             a_bits = FLAGS.a_bits
             w_bits = FLAGS.w_bits
             quantize = True
+            fixed = True # Do standard dorefa quantization
         else:
             a_bits = None
             w_bits = None
             quantize = False
+            fixed = False
 
-        config = Config(quantize=quantize, a_bits=a_bits, w_bits=w_bits)
+        config = Config(quantize=quantize, a_bits=a_bits, w_bits=w_bits, fixed=fixed)
 
         with config:
             model = get_model(FLAGS.model)
