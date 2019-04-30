@@ -29,14 +29,28 @@ def adam_piecewise(global_step, batch_size, num_gpus):
         learning_rate=lr_schedule, epsilon=1e-5)
     return optimizer, lr_schedule
 
+
 def sgd_piecewise(global_step, batch_size, num_gpus):
     starting_lr, steps_per_epoch = adjust_start_lr(0.1, batch_size, num_gpus, batch_denom=256)
-    
+
     lr_values = [0.1, 1e-2, 1e-3, 1e-4, 1e-5]
     epoch_boundaries = [30, 60, 85, 95]
     step_boundaries = [int(x * steps_per_epoch) for x in epoch_boundaries]
     lr_schedule = tf.compat.v1.train.piecewise_constant_decay(
         global_step, boundaries=step_boundaries, values=lr_values)
     optimizer = tf.compat.v1.train.MomentumOptimizer(lr_schedule, 0.9)
+
+    return optimizer, lr_schedule
+
+
+def cosine_decay(global_step, batch_size, num_gpus):
+    starting_lr, steps_per_epoch = adjust_start_lr(.0128, batch_size, num_gpus, batch_denom=128)
+
+    lr_schedule = tf.compat.v1.train.cosine_decay_restarts(starting_lr, global_step, 1000)
+
+    optimizer = tf.compat.v1.train.MomentumOptimizer(
+        learning_rate=lr_schedule,
+        momentum=0.9,
+        use_nesterov=False)
 
     return optimizer, lr_schedule
