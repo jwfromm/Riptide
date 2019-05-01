@@ -1,4 +1,5 @@
 import tensorflow as tf
+from .clr import cyclic_learning_rate
 
 _NUM_IMAGES = 1281167
 
@@ -53,4 +54,26 @@ def cosine_decay(global_step, batch_size, num_gpus):
         momentum=0.9,
         use_nesterov=False)
 
+    return optimizer, lr_schedule
+
+def cyclic(global_step, batch_size, num_gpus):
+    max_lr, steps_per_epoch = adjust_start_lr(.1, batch_size, num_gpus, batch_denom=128)
+
+    step_size = 4 * steps_per_epoch
+
+    lr_schedule = cyclic_learning_rate(
+        global_step, learning_rate=1e-6,
+        max_lr=max_lr, step_size=step_size, mode='exp_range', gamma=.99994)
+
+    # Momentum should vary inversely to learning rate.
+    max_momentum = 0.9
+    min_momentum = 0.0
+    momentum_schedule = max_momentum - cyclic_learning_rate(
+        global_step, learning_rate=min_momentum,
+        max_lr=max_momentum, step_size=step_size, mode='triangular')
+
+    optimizer = tf.compat.v1.train.MomentumOptimizer(
+        learning_rate=lr_schedule,
+        momentum=momentum_schedule,
+        use_nesterov=False)
     return optimizer, lr_schedule
