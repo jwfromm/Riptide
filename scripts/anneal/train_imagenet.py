@@ -81,7 +81,7 @@ def main(argv):
             a_bits = FLAGS.a_bits
             w_bits = FLAGS.w_bits
             quantize = True
-            fixed = True # Do standard dorefa quantization
+            fixed = False# Do standard dorefa quantization
         else:
             a_bits = None
             w_bits = None

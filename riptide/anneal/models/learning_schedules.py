@@ -63,7 +63,7 @@ def cyclic(global_step, batch_size, num_gpus):
 
     lr_schedule = cyclic_learning_rate(
         global_step, learning_rate=1e-6,
-        max_lr=max_lr, step_size=step_size, mode='exp_range', gamma=.99994)
+        max_lr=max_lr, step_size=step_size, mode='triangular')
 
     # Momentum should vary inversely to learning rate.
     max_momentum = 0.9
