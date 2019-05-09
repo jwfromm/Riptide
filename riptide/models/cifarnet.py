@@ -79,7 +79,6 @@ class CifarNet(tf.keras.Model):
     def call(self, inputs, training=None):
         with tf.name_scope('normal'):
             x = self.conv1(inputs)
-        tf.compat.v1.summary.histogram('first_layer_weights',
                                        self.conv1.kernel)
         x = self.bn1(x, training=training)
         x = self.conv2(x)
@@ -87,9 +86,7 @@ class CifarNet(tf.keras.Model):
         x = self.conv3(x)
         x = self.bn3(x, training=training)
         x = self.conv4(x)
-        tf.compat.v1.summary.histogram('bn4_input', x)
         x = self.bn4(x, training=training)
-        tf.compat.v1.summary.histogram('bn4_output', x)
         x = self.conv5(x)
         x = self.bn5(x, training=training)
         x = self.conv6(x)
@@ -99,6 +96,5 @@ class CifarNet(tf.keras.Model):
         x = self.global_pooling(x)
         with tf.name_scope('normal'):
             x = self.dense(x)
-        tf.compat.v1.summary.histogram('output', x)
 
         return x

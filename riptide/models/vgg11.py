@@ -165,7 +165,6 @@ class vgg11(tf.keras.Model):
         layers.append(x)
         x = self.softmax(x)
         layers.append(x)
-        tf.compat.v1.summary.histogram('output', x)
 
         if debug:
             return layers

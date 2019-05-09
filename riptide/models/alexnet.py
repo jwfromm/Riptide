@@ -89,6 +89,4 @@ class alexnet(tf.keras.Model):
         x = self.dense8(x)
         #x = self.scalu(x)
 
-        tf.compat.v1.summary.histogram('output', x)
-
         return x

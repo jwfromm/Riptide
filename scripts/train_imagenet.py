@@ -156,7 +156,6 @@ def main(argv):
 
     # Now we're ready to configure our estimator and train.
     # Determine proper name for this model.
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
     full_model_path = os.path.join(FLAGS.model_dir,
                                    "%s_%s" % (FLAGS.model, FLAGS.experiment))
     # Figure out which GPUS to run on.
