@@ -1,1 +1,0 @@
-echomsg 'Plugin files sourced.'

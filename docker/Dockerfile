@@ -1,6 +1,7 @@
 #FROM jwfromm/tf-gpu
 #FROM tensorflow/tensorflow:1.13.1-gpu-py3
-FROM tensorflow/tensorflow:2.0.0a0-gpu-py3
+#FROM tensorflow/tensorflow:2.0.0a0-gpu-py3
+FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -25,15 +26,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         llvm-dev \
         wget \
         zlib1g-dev \
+	python3 \
+	python3-pip \
+	python-setuptools \
         && \
     rm -rf /var/lib/apt/lists/*
 
 # Need to redefine python to proper version.
 RUN rm /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python
+RUN ln -s /usr/bin/pip3 /usr/bin/pip
 
 # Install TVM dependencies
 WORKDIR /root
-RUN pip install numpy nose-timer cython decorator scipy
+RUN pip install --upgrade pip setuptools
+RUN pip install numpy nose-timer cython decorator scipy sklearn pandas matplotlib
 
 # install mkl
 WORKDIR /tmp
@@ -54,6 +60,9 @@ RUN go get github.com/bazelbuild/buildtools/buildifier
 ENV PATH $PATH:/go/bin
 
 RUN pip --no-cache-dir install \
+	tensorflow-gpu==2.0.0-alpha0 \
+	keras_applications\
+	keras_preprocessing \
         Pillow \
         mixpanel \
         graphviz \
@@ -92,9 +101,10 @@ ENV HOME /home
 WORKDIR /home
 
 # Set up some convenience stuff
-COPY .vim /home/.vim
 COPY .vimrc /home
 COPY .gitconfig /home
+COPY bashrc /etc/bash.bashrc
+RUN chmod a+rwx /etc/bash.bashrc
 
 ENV DISPLAY 0
 
@@ -105,6 +115,8 @@ ENV PYTHONPATH /home/models/research:$PYTHONPATH
 ENV PYTHONPATH /home/models/:$PYTHONPATH
 ENV PYTHONPATH /home/Riptide:$PYTHONPATH
 ENV PYTHONPATH /home/FoveNet:$PYTHONPATH
+ENV TVM_HOME /home/tvm
+ENV PYTHONPATH $TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:$PYTHONPATH
 
 # Make home bazel workspace
 RUN touch /home/WORKSPACE
