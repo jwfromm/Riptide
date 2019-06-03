@@ -17,7 +17,7 @@ class resnet18(tf.keras.Model):
             use_bias=False)
         self.pool1 = nn.NormalMaxPool2D(pool_size=3, strides=2, padding='same')
         self.bn1 = nn.NormalBatchNormalization(center=False, scale=False)
-        self.quantize = nn.Scale(1.0)
+        self.quantize = nn.EnterInteger(1.0)
 
         # BasicBlock 1
         self.block1_conv1 = nn.BinaryConv2D(

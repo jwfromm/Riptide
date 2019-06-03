@@ -17,7 +17,7 @@ class vggnet(tf.keras.Model):
             use_bias=False)
         self.pool1 = nn.NormalMaxPool2D(pool_size=2, strides=2)
         self.bn1 = nn.NormalBatchNormalization(center=False, scale=False)
-        self.quantize = nn.Scale(1.0)
+        self.quantize = nn.EnterInteger(1.0)
 
         self.conv2 = nn.BinaryConv2D(
             filters=256,

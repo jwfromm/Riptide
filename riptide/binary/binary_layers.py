@@ -99,7 +99,7 @@ class BinaryConv2D(keras.layers.Conv2D):
         with tf.name_scope("actQ"):
             tf.compat.v1.summary.histogram('prebinary_activations', inputs)
             if self.bits is not None:
-                inputs = self.actQ(inputs, self.bits)
+                inputs = self.actQ(inputs, float(self.bits))
             else:
                 inputs = self.actQ(inputs)
             tf.compat.v1.summary.histogram('binary_activations', inputs)
@@ -148,7 +148,7 @@ class BinaryDense(keras.layers.Dense):
         with tf.name_scope("actQ"):
             tf.compat.v1.summary.histogram('prebinary_activations', inputs)
             if self.bits is not None:
-                inputs = self.actQ(inputs, self.bits)
+                inputs = self.actQ(inputs, float(self.bits))
             else:
                 inputs = self.actQ(inputs)
             tf.compat.v1.summary.histogram('binary_activations', inputs)
@@ -216,18 +216,15 @@ class QAdd(keras.layers.Layer):
         return output
 
 
-class Scale(keras.layers.Layer):
+class EnterInteger(keras.layers.Layer):
     def __init__(self, scale):
-        super(Scale, self).__init__()
-        self.scope = Config.current
-        self.use_bn = self.scope.use_bn
+        super(EnterInteger, self).__init__()
         self.scale = scale
+        self.scope = Config.current
+        self.bits = self.scope.bits
 
     def call(self, inputs):
-        if self.use_bn:
-            return inputs
-        else:
-            return self.scale * inputs
+        return self.scale * inputs
 
 
 class SpecialBatchNormalization(keras.layers.BatchNormalization):

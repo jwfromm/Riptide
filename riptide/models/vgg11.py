@@ -25,7 +25,7 @@ class vgg11(tf.keras.Model):
             activation='relu')
         self.bn1 = nn.NormalBatchNormalization()
         self.pool1 = nn.NormalMaxPool2D(pool_size=2, strides=2)
-        self.scale = nn.Scale(0.5)
+        self.quantize = nn.EnterInteger(1.0)
 
         self.conv2 = nn.BinaryConv2D(
             filters=128,
@@ -106,7 +106,7 @@ class vgg11(tf.keras.Model):
             x = self.pool1(x)
             layers.append(x)
         # When running in binary, need to reduce spread of normal distribution
-        x = self.scale(x)
+        x = self.quantize(x)
         layers.append(x)
         # Continue with binary layers.
         x = self.conv2(x)
