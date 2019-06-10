@@ -60,7 +60,7 @@ RUN go get github.com/bazelbuild/buildtools/buildifier
 ENV PATH $PATH:/go/bin
 
 RUN pip --no-cache-dir install \
-	tensorflow-gpu==2.0.0-alpha0 \
+	tensorflow-gpu==2.0.0-beta0\
 	keras_applications\
 	keras_preprocessing \
         Pillow \
