@@ -1,6 +1,6 @@
 from .models import cifar_resnet
 from .models import resnetv1b as resnet
-from .models import vgg11, vggnet, resnet18, alexnet
+from .models import vgg11, vggnet, resnet18, alexnet, vggnet_normal
 from .binary.models import q_cifar_resnet
 from .binary.models import q_resnetv1b as q_resnet
 

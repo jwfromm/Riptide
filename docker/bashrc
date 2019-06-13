@@ -39,11 +39,6 @@ To avoid this, run the container by specifying your user's userid:
 
 $ docker run -u \$(id -u):\$(id -g) args...
 WARN
-else
-  cat <<EXPL
-You are running this container as user with ID $(id -u) and group $(id -g),
-which should map to the ID and group for your user on the Docker host. Great!
-EXPL
 fi
 
 # Turn off colors
