@@ -17,11 +17,17 @@ from riptide.binary.binary_layers import Config, DQuantize, XQuantize
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ''
 
+log_file = "rpi3_quantized.log"
+device_key = 'rpi3b'
+target = tvm.target.arm_cpu("rasp3b")
+target_host = 'llvm -device=arm_cpu -target=arm-linux-gnueabihf -mattr=+neon'
+ctx = tvm.cpu(0)
+
 config = Config(actQ=DQuantize, weightQ=XQuantize, bits=1, use_act=False, use_bn=False, use_maxpool=True)
 
-#with config:
-#    model = get_model('vggnet')
-model = riptide.models.vggnet_normal.vggnet()
+with config:
+    model = get_model('vggnet')
+#model = riptide.models.vggnet_normal.vggnet()
 
 # Init model shapes.
 input_shape = [1, 3, 224, 224]
@@ -29,14 +35,11 @@ test_input = tf.keras.Input(shape=[224, 224, 3], batch_size=1, dtype='float32')
 output = model(test_input)
 
 # Parse model to relay
-net, params = relay.frontend.from_keras(model, shape={'input_1': [1, 224, 224, 3]})
+with target:
+    net, params = relay.frontend.from_keras(model, shape={'input_1': [1, 224, 224, 3]})
 
-num_threads = 12
+num_threads = 4
 os.environ["TVM_NUM_THREADS"] = str(num_threads)
-
-log_file = "test_standard.log"
-target = "llvm"
-ctx = tvm.cpu(0)
 
 # Set up tuning options
 
@@ -47,8 +50,10 @@ tuning_option = {
     'n_trial': 200,
 
     'measure_option': autotvm.measure_option(
-        builder=autotvm.LocalBuilder(),
-        runner=autotvm.LocalRunner(number=10, repeat=1, min_repeat_ms=150),
+        builder=autotvm.LocalBuilder(build_func='default'),
+        runner=autotvm.RPCRunner(
+            device_key, host='0.0.0.0', port=9190,
+            number=5, timeout=10)
     ),
 }
 
@@ -115,25 +120,37 @@ def tune_and_evaluate(tuning_opt):
     print("Tuning...")
     tune_kernels(tasks, **tuning_opt)
 
-    # compile kernels with historgy best records.
-    with autotvm.apply_history_best(log_file):
-        print("Compile...")
-        with relay.build_config(opt_level=2):
-            graph, lib, params = relay.build_module.build(
-                net, target=target, params=params)
-
-        # Upload parameters to device.
-        ctx = tvm.cpu()
-        data_tvm = tvm.nd.array((np.random.uniform(size=input_shape)).astype('float32'))
-        module = runtime.create(graph, lib, ctx)
-        module.set_input('input_1', data_tvm)
-        module.set_input(**params)
-
-        # evaluate
-        print("Evaluate inference time cost...")
-        ftimer = module.module.time_evaluator("run", ctx, number=10, repeat=1)
-        prof_res = np.array(ftimer().results) * 1000 # Convert to milliseconds
-        print("Mean inference time (std dev): %.2f ms (%.2f ms)" %
-              (np.mean(prof_res), np.std(prof_res)))
+#    # compile kernels with historgy best records.
+#    with autotvm.apply_history_best(log_file):
+#        print("Compile...")
+#        with relay.build_config(opt_level=3):
+#            graph, lib, params = relay.build_module.build(
+#                net, target=target, params=params)
+#
+#        # Export library
+#        tmp = tempdir()
+#        filename = 'net.so'
+#        lib.export_library(tmp.relpath(filename))
+#
+#        # Upload module to device
+#        print("Upload...")
+#        remote = autotvm.measure.request_remote(device_key, '0.0.0.0', 9190, timeout=10000)
+#
+#        remote.upload(tmp.relpath(filename))
+#        rlib = remote.load_module(filename)
+#
+#        # upload parameters to device
+#        ctx = remote.context(str(target), 0)
+#        module = runtime.create(graph, rlib, ctx)
+#        data_tvm = tvm.nd.array((np.random.uniform(size=input_shape)).astype('float32'))
+#        module.set_input('input_1', data_tvm)
+#        module.set_input(**params)
+#
+#        # evaluate
+#        print("Evaluate inference time cost...")
+#        ftimer = module.module.time_evaluator("run", ctx, number=10, repeat=1)
+#        prof_res = np.array(ftimer().results) * 1000 # Convert to milliseconds
+#        print("Mean inference time (std dev): %.2f ms (%.2f ms)" %
+#              (np.mean(prof_res), np.std(prof_res)))
 
 tune_and_evaluate(tuning_option)
