@@ -1,7 +1,8 @@
 import os
 import numpy as np
 import tensorflow as tf
- 
+import argparse
+
 import tvm
 from tvm import autotvm
 from tvm import relay
@@ -17,24 +18,40 @@ from riptide.binary.binary_layers import Config, DQuantize, XQuantize
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ''
 
-config = Config(actQ=DQuantize, weightQ=XQuantize, bits=1, use_act=False, use_bn=False, use_maxpool=True)
+parser = argparse.ArgumentParser()
+parser.add_argument('--activation_bits', type=int, default=1, help='number of activation bits', required=False)
+parser.add_argument('--model', type=str, choices=['vggnet', 'vgg11', 'resnet18', 'alexnet', 'darknet'], help='neural network model', required=True)
+parser.add_argument('--trials', type=int, default=50, help='number of tuning trials', required=False)
+parser.add_argument('--tuner', type=str, default='xgb', choices=['xgb', 'random', 'grid'], help='autotvm tuning algorithm.', required=False)
+parser.add_argument('--log_file', type=str, default='log.log', help='logfile to store tuning results', required=False)
+args = parser.parse_args()
 
-#with config:
-#    model = get_model('vggnet')
-model = riptide.models.vggnet_normal.vggnet()
+model = args.model
+activation_bits = args.activation_bits
+trials = args.trials
+tuner = args.tuner
+log_file = args.log_file
+
+config = Config(actQ=DQuantize, weightQ=XQuantize, bits=activation_bits, use_act=False, use_bn=False, use_maxpool=True)
+
+with config:
+    model = get_model(model)
+#model = riptide.models.normal_vggnet.vggnet()
+
 
 # Init model shapes.
-input_shape = [1, 3, 224, 224]
+input_shape = [1, 224, 224, 3]
+
 test_input = tf.keras.Input(shape=[224, 224, 3], batch_size=1, dtype='float32')
 output = model(test_input)
+print("Test run of model", output)
 
 # Parse model to relay
-net, params = relay.frontend.from_keras(model, shape={'input_1': [1, 224, 224, 3]})
+net, params = relay.frontend.from_keras(model, shape={'input_1': input_shape})
 
 num_threads = 12
 os.environ["TVM_NUM_THREADS"] = str(num_threads)
 
-log_file = "test_standard.log"
 target = "llvm"
 ctx = tvm.cpu(0)
 
@@ -42,9 +59,9 @@ ctx = tvm.cpu(0)
 
 tuning_option = {
     'log_filename': log_file,
-    'tuner': 'xgb',
+    'tuner': tuner,
     'early_stopping': None,
-    'n_trial': 200,
+    'n_trial': trials,
 
     'measure_option': autotvm.measure_option(
         builder=autotvm.LocalBuilder(),
