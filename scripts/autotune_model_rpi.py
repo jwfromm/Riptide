@@ -75,7 +75,6 @@ with config:
 #model = riptide.models.vggnet_normal.vggnet()
 
 # Init model shapes.
-input_shape = [1, 3, 224, 224]
 test_input = tf.keras.Input(shape=[224, 224, 3], batch_size=1, dtype='float32')
 output = model(test_input)
 
@@ -83,7 +82,7 @@ output = model(test_input)
 with target:
     net, params = relay.frontend.from_keras(
         model, shape={
-            'input_1': [1, 224, 224, 3]
+            'input_1': [1, 64, 64, 64]
         }, layout='NHWC')
 num_threads = 4
 os.environ["TVM_NUM_THREADS"] = str(num_threads)
@@ -165,7 +164,7 @@ def tune_kernels(tasks,
 # Launch jobs and evaluate performance.
 def tune_and_evaluate(tuning_opt):
     print("Extract tasks...")
-    global net, params, input_shape
+    global net, params
 
     tasks = autotvm.task.extract_from_program(
         net,
@@ -187,9 +186,8 @@ def tune_and_evaluate(tuning_opt):
 
         batch_size = 1
         num_class = 1000
-        image_shape = (3, 224, 224)
+        image_shape = (64, 64, 64)
         data_shape = (batch_size, ) + image_shape
-        out_shape = (batch_size, num_class)
 
         tmp = util.tempdir()
         lib_fname = tmp.relpath('net.tar')

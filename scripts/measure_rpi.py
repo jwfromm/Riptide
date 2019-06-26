@@ -29,13 +29,13 @@ with config:
 #model = riptide.models.vggnet_normal.vggnet()
 
 # Init model shapes.
-input_shape = [1, 8, 224, 224]
+input_shape = [1, 64, 64, 64]
 test_input = tf.keras.Input(shape=[224, 224, 3], batch_size=1, dtype='float32')
 output = model(test_input)
 
 # Parse model to relay
 with target:
-    net, params = relay.frontend.from_keras(model, shape={'input_1': [1, 224, 224, 8]}, layout='NHWC')
+    net, params = relay.frontend.from_keras(model, shape={'input_1': [1, 64, 64, 64]}, layout='NHWC')
 
 num_threads = 4
 os.environ["TVM_NUM_THREADS"] = str(num_threads)
@@ -43,7 +43,7 @@ os.environ["TVM_NUM_THREADS"] = str(num_threads)
 # compile kernels with historgy best records.
 with autotvm.apply_history_best(log_file):
     print("Compile...")
-    with relay.build_config(opt_level=1):
+    with relay.build_config(opt_level=3):
         graph, lib, params = relay.build_module.build(
             net, target=target, params=params)
 
