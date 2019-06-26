@@ -24,19 +24,51 @@ target = tvm.target.arm_cpu("rasp3b")
 target_host = 'llvm -device=arm_cpu -target=arm-linux-gnueabihf -mattr=+neon'
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--activation_bits', type=int, default=1, help='number of activation bits', required=False) 
-parser.add_argument('--model', type=str, choices=['vggnet', 'vgg11', 'resnet18', 'alexnet', 'darknet'], help='neural network model', required=True)
-parser.add_argument('--trials', type=int, default=50, help='number of tuning trials', required=False)
-parser.add_argument('--tuner', type=str, default='xgb', choices=['xgb', 'random', 'grid'], help='autotvm tuning algorithm.', required=False)
-parser.add_argument('--log_file', type=str, default='log.log', help='logfile to store tuning results', required=False)
-args = parser.parse_args()                                                                                                                                
+parser.add_argument(
+    '--activation_bits',
+    type=int,
+    default=1,
+    help='number of activation bits',
+    required=False)
+parser.add_argument(
+    '--model',
+    type=str,
+    choices=['vggnet', 'vgg11', 'resnet18', 'alexnet', 'darknet'],
+    help='neural network model',
+    required=True)
+parser.add_argument(
+    '--trials',
+    type=int,
+    default=50,
+    help='number of tuning trials',
+    required=False)
+parser.add_argument(
+    '--tuner',
+    type=str,
+    default='xgb',
+    choices=['xgb', 'ga', 'gridsearch'],
+    help='autotvm tuning algorithm.',
+    required=False)
+parser.add_argument(
+    '--log_file',
+    type=str,
+    default='log.log',
+    help='logfile to store tuning results',
+    required=False)
+args = parser.parse_args()
 model = args.model
 activation_bits = args.activation_bits
 trials = args.trials
 tuner = args.tuner
 log_file = args.log_file
 
-config = Config(actQ=DQuantize, weightQ=XQuantize, bits=activation_bits, use_act=False, use_bn=False, use_maxpool=True)
+config = Config(
+    actQ=DQuantize,
+    weightQ=XQuantize,
+    bits=activation_bits,
+    use_act=False,
+    use_bn=False,
+    use_maxpool=True)
 
 with config:
     model = get_model(model)
@@ -49,24 +81,33 @@ output = model(test_input)
 
 # Parse model to relay
 with target:
-    net, params = relay.frontend.from_keras(model, shape={'input_1': [1, 224, 224, 3]})
+    net, params = relay.frontend.from_keras(
+        model, shape={
+            'input_1': [1, 224, 224, 3]
+        }, layout='NHWC')
 num_threads = 4
 os.environ["TVM_NUM_THREADS"] = str(num_threads)
 
 # Set up tuning options
 
 tuning_option = {
-    'log_filename': log_file,
-    'tuner': tuner,
-    'early_stopping': None,
-    'n_trial': trials,
-
-    'measure_option': autotvm.measure_option(
+    'log_filename':
+    log_file,
+    'tuner':
+    tuner,
+    'early_stopping':
+    None,
+    'n_trial':
+    trials,
+    'measure_option':
+    autotvm.measure_option(
         builder=autotvm.LocalBuilder(build_func='default'),
         runner=autotvm.RPCRunner(
-            device_key, host='fleet.cs.washington.edu', port=9190,
-            number=1, timeout=20)
-    ),
+            device_key,
+            host='fleet.cs.washington.edu',
+            port=9190,
+            number=1,
+            timeout=20)),
 }
 
 
@@ -78,7 +119,7 @@ def tune_kernels(tasks,
                  log_filename=log_file):
 
     for i, tsk in enumerate(tasks):
-        prefix = "[Task %2d/%2d] " % (i+1, len(tasks))
+        prefix = "[Task %2d/%2d] " % (i + 1, len(tasks))
 
         # Converting conv2d tasks to conv2d_NCHWc tasks. Do we actually want this?
         op_name = tsk.workload[0]
@@ -94,7 +135,8 @@ def tune_kernels(tasks,
         #    func_create = 'topi_x86_depthwise_conv2d_NCHWc_from_nchw'
 
         print(func_create)
-        task = autotvm.task.create(func_create, args=tsk.args, target=target, template_key='direct')
+        task = autotvm.task.create(
+            func_create, args=tsk.args, target=target, template_key='direct')
 
         task.workload = tsk.workload
 
@@ -110,24 +152,26 @@ def tune_kernels(tasks,
 
         # Do tuning.
         n_trial = min(n_trial, len(task.config_space))
-        tuner_obj.tune(n_trial=n_trial,
-                       early_stopping=early_stopping,
-                       measure_option=measure_option,
-                       callbacks=[
-                           autotvm.callback.progress_bar(n_trial, prefix=prefix),
-                           autotvm.callback.log_to_file(log_filename)])
+        tuner_obj.tune(
+            n_trial=n_trial,
+            early_stopping=early_stopping,
+            measure_option=measure_option,
+            callbacks=[
+                autotvm.callback.progress_bar(n_trial, prefix=prefix),
+                autotvm.callback.log_to_file(log_filename)
+            ])
+
 
 # Launch jobs and evaluate performance.
 def tune_and_evaluate(tuning_opt):
     print("Extract tasks...")
     global net, params, input_shape
-    
+
     tasks = autotvm.task.extract_from_program(
         net,
         target=target,
         params=params,
-        ops=(relay.op.nn.conv2d, relay.op.nn.dense, relay.op.nn.bitserial_conv2d,
-             relay.op.nn.bitserial_dense))
+        ops=(relay.op.nn.bitserial_conv2d, relay.op.nn.bitserial_dense))
 
     # Run tuning tasks.
     print("Tuning...")
@@ -135,42 +179,46 @@ def tune_and_evaluate(tuning_opt):
 
     # compile kernels with historgy best records.
     with autotvm.apply_history_best(log_file):
-           print("Compile...")
-           
-           with relay.build_config(opt_level=3):
-              graph, lib, params = relay.build_module.build(
-                  net, target=target, params=params)
- 
-           batch_size = 1
-           num_class = 1000
-           image_shape = (3, 224, 224)
-           data_shape = (batch_size,) + image_shape
-           out_shape = (batch_size, num_class)
+        print("Compile...")
 
-           tmp = util.tempdir()
-           lib_fname = tmp.relpath('net.tar')
-           lib.export_library(lib_fname)
+        with relay.build_config(opt_level=3):
+            graph, lib, params = relay.build_module.build(
+                net, target=target, params=params)
 
+        batch_size = 1
+        num_class = 1000
+        image_shape = (3, 224, 224)
+        data_shape = (batch_size, ) + image_shape
+        out_shape = (batch_size, num_class)
 
-           # Upload module to device
-           print("Upload...")
-           remote = autotvm.measure.request_remote(device_key, 'fleet.cs.washington.edu', 9190, timeout=10000)
-           # upload the library to remote device and load it
-           remote.upload(lib_fname)
-           rlib = remote.load_module('net.tar')
+        tmp = util.tempdir()
+        lib_fname = tmp.relpath('net.tar')
+        lib.export_library(lib_fname)
 
-           # create the remote runtime module
-           ctx = remote.cpu(0)
-           module = runtime.create(graph, rlib, ctx)
-           # set parameter (upload params to the remote device. This may take a while)
-           module.set_input(**params)
-           module.set_input('input_1', tvm.nd.array(np.random.uniform(size=image_shape).astype('float32')))
-           module.run()
-           # Evaluate
-           print("Evaluate inference time cost...")
-           ftimer = module.module.time_evaluator("run", ctx, number=10, repeat=1)
-           prof_res = np.array(ftimer().results) * 1000 # Convert to milliseconds
-           print("Mean inference time (std dev): %.2f ms (%.2f ms)" %
-                 (np.mean(prof_res), np.std(prof_res)))
+        # Upload module to device
+        print("Upload...")
+        remote = autotvm.measure.request_remote(
+            device_key, 'fleet.cs.washington.edu', 9190, timeout=10000)
+        # upload the library to remote device and load it
+        remote.upload(lib_fname)
+        rlib = remote.load_module('net.tar')
+
+        # create the remote runtime module
+        ctx = remote.cpu(0)
+        module = runtime.create(graph, rlib, ctx)
+        # set parameter (upload params to the remote device. This may take a while)
+        module.set_input(**params)
+        module.set_input(
+            'input_1',
+            tvm.nd.array(
+                np.random.uniform(size=image_shape).astype('float32')))
+        module.run()
+        # Evaluate
+        print("Evaluate inference time cost...")
+        ftimer = module.module.time_evaluator("run", ctx, number=10, repeat=1)
+        prof_res = np.array(ftimer().results) * 1000  # Convert to milliseconds
+        print("Mean inference time (std dev): %.2f ms (%.2f ms)" %
+              (np.mean(prof_res), np.std(prof_res)))
+
 
 tune_and_evaluate(tuning_option)
