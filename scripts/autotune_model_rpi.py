@@ -82,7 +82,7 @@ output = model(test_input)
 with target:
     net, params = relay.frontend.from_keras(
         model, shape={
-            'input_1': [1, 64, 64, 64]
+            'input_1': [1, 224, 224, 3]
         }, layout='NHWC')
 num_threads = 4
 os.environ["TVM_NUM_THREADS"] = str(num_threads)
@@ -170,7 +170,7 @@ def tune_and_evaluate(tuning_opt):
         net,
         target=target,
         params=params,
-        ops=(relay.op.nn.bitserial_conv2d, relay.op.nn.bitserial_dense))
+        ops=(relay.op.nn.conv2d, relay.op.nn.bitserial_conv2d, relay.op.nn.bitserial_dense))
 
     # Run tuning tasks.
     print("Tuning...")
@@ -186,7 +186,7 @@ def tune_and_evaluate(tuning_opt):
 
         batch_size = 1
         num_class = 1000
-        image_shape = (64, 64, 64)
+        image_shape = (224, 224, 3)
         data_shape = (batch_size, ) + image_shape
 
         tmp = util.tempdir()
