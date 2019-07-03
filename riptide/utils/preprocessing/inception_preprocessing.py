@@ -181,7 +181,7 @@ def preprocess_for_train(image, height, width, bbox, fast_mode=True):
             image = tf.image.convert_image_dtype(image, dtype=tf.float32)
         # Each bounding box has shape [1, num_boxes, box coords] and
         # the coordinates are ordered [ymin, xmin, ymax, xmax].
-        image_with_box = tf.image.draw_bounding_boxes(
+        image_with_box = tf.compat.v1.image.draw_bounding_boxes(
             tf.expand_dims(image, 0), bbox)
 
         distorted_image, distorted_bbox = distorted_bounding_box_crop(
@@ -189,7 +189,7 @@ def preprocess_for_train(image, height, width, bbox, fast_mode=True):
         # Restore the shape since the dynamic slice based upon the bbox_size loses
         # the third dimension.
         distorted_image.set_shape([None, None, 3])
-        image_with_distorted_box = tf.image.draw_bounding_boxes(
+        image_with_distorted_box = tf.compat.v1.image.draw_bounding_boxes(
             tf.expand_dims(image, 0), distorted_bbox)
 
         # This resizing operation may distort the images because the aspect

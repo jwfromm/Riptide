@@ -96,7 +96,11 @@ def main(argv):
         global_step = tf.compat.v1.train.get_or_create_global_step()
         optimizer, learning_rate = get_optimizer(FLAGS.model, global_step,
                                                  FLAGS.batch_size, num_gpus)
-        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy()
+
+        loss_object = tf.keras.losses.SparseCategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
+        def loss_fn(labels, predictions):
+            per_example_loss = loss_object(labels, predictions)
+            return tf.nn.compute_average_loss(per_example_loss, global_batch_size=FLAGS.batch_size * num_gpus)
 
         # Track learning rate.
         tf.compat.v1.summary.scalar('learning_rate', learning_rate)
