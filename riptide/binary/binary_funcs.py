@@ -33,7 +33,7 @@ def get_numpy(sess, x):
 def compute_quantized_shiftnorm(variance,
                                 mean,
                                 epsilon,
-                                conv_weights,
+                                previous_weights,
                                 extra_scale,
                                 bits,
                                 rescale=True):
@@ -43,7 +43,7 @@ def compute_quantized_shiftnorm(variance,
         approximate_std = AP2(std_factor)
     # Now determine number of bits needed, the sum of weight scale
     # bits and shift norm scale bits.
-    weight_scale_ap2, _ = get_quantize_bits(conv_weights)
+    weight_scale_ap2, _ = get_quantize_bits(previous_weights)
     weight_scale_bits = -log2(weight_scale_ap2)
     weight_scale_bits = tf.reshape(weight_scale_bits, [-1])
     total_shift_bits = weight_scale_bits + bits
@@ -60,14 +60,14 @@ def compute_quantized_shiftnorm(variance,
     return approximate_std, quantized_means
 
 
-def get_shiftnorm_ap2(layer, conv_weights, rescale=False):
+def get_shiftnorm_ap2(layer, previous_weights, rescale=False):
     mean = layer.weights[0].value()
     extra_scale = layer.extra_scale
     epsilon = layer.epsilon
     variance = layer.weights[1].value()
     bits = layer.bits
     approximate_std, quantized_means = compute_quantized_shiftnorm(
-        variance, mean, epsilon, conv_weights, extra_scale, bits, rescale)
+        variance, mean, epsilon, previous_weights, extra_scale, bits, rescale)
     return approximate_std, quantized_means
 
 

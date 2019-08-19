@@ -26,7 +26,7 @@ class vggnet(tf.keras.Model):
             padding='same',
             activation='relu',
             use_bias=False)
-        self.bn2 = nn.BatchNormalization()
+        self.bn2 = nn.BatchNormalization(self.conv2)
 
         self.conv3 = nn.BinaryConv2D(
             filters=256,
@@ -35,7 +35,7 @@ class vggnet(tf.keras.Model):
             padding='same',
             activation='relu',
             use_bias=False)
-        self.bn3 = nn.BatchNormalization()
+        self.bn3 = nn.BatchNormalization(self.conv3)
 
         self.conv4 = nn.BinaryConv2D(
             filters=256,
@@ -45,7 +45,7 @@ class vggnet(tf.keras.Model):
             activation='relu',
             use_bias=False)
         self.pool4 = nn.MaxPool2D(pool_size=2, strides=2)
-        self.bn4 = nn.BatchNormalization()
+        self.bn4 = nn.BatchNormalization(self.conv4)
 
         self.conv5 = nn.BinaryConv2D(
             filters=512,
@@ -54,7 +54,7 @@ class vggnet(tf.keras.Model):
             padding='same',
             activation='relu',
             use_bias=False)
-        self.bn5 = nn.BatchNormalization()
+        self.bn5 = nn.BatchNormalization(self.conv5)
 
         self.conv6 = nn.BinaryConv2D(
             filters=512,
@@ -63,7 +63,7 @@ class vggnet(tf.keras.Model):
             padding='same',
             activation='relu',
             use_bias=False)
-        self.bn6 = nn.BatchNormalization()
+        self.bn6 = nn.BatchNormalization(self.conv6)
 
         self.conv7 = nn.BinaryConv2D(
             filters=512,
@@ -73,7 +73,7 @@ class vggnet(tf.keras.Model):
             activation='relu',
             use_bias=False)
         self.pool7 = nn.MaxPool2D(pool_size=2, strides=2)
-        self.bn7 = nn.BatchNormalization()
+        self.bn7 = nn.BatchNormalization(self.conv7)
 
         self.conv8 = nn.BinaryConv2D(
             filters=512,
@@ -82,7 +82,7 @@ class vggnet(tf.keras.Model):
             padding='same',
             activation='relu',
             use_bias=False)
-        self.bn8 = nn.BatchNormalization()
+        self.bn8 = nn.BatchNormalization(self.conv8)
 
         self.conv9 = nn.BinaryConv2D(
             filters=512,
@@ -91,7 +91,7 @@ class vggnet(tf.keras.Model):
             padding='same',
             activation='relu',
             use_bias=False)
-        self.bn9 = nn.BatchNormalization()
+        self.bn9 = nn.BatchNormalization(self.conv9)
 
         self.conv10 = nn.BinaryConv2D(
             filters=512,
@@ -101,13 +101,13 @@ class vggnet(tf.keras.Model):
             activation='relu',
             use_bias=False)
         self.pool10 = nn.MaxPool2D(pool_size=2, strides=2)
-        self.bn10 = nn.BatchNormalization()
+        self.bn10 = nn.BatchNormalization(self.conv10)
         self.flatten = nn.Flatten()
 
         self.dense1 = nn.BinaryDense(4096, use_bias=False, activation='relu')
-        self.bn11 = nn.BatchNormalization(binary_dense=True)
+        self.bn11 = nn.BatchNormalization(self.dense1)
         self.dense2 = nn.BinaryDense(4096, use_bias=False, activation='relu')
-        self.bn12 = nn.BatchNormalization(binary_dense=True)
+        self.bn12 = nn.BatchNormalization(self.dense2)
         self.dense3 = nn.BinaryDense(classes, use_bias=False)
         self.scalu = nn.Scalu()
         self.softmax = nn.Activation('softmax')
@@ -127,55 +127,55 @@ class vggnet(tf.keras.Model):
         x = self.conv2(x)
         layers.append(x)
         x = self.bn2(
-            x, conv_weights=self.conv2.weights[0].value(), training=training)
+            x, training=training)
         layers.append(x)
         x = self.conv3(x)
         layers.append(x)
         x = self.bn3(
-            x, conv_weights=self.conv3.weights[0].value(), training=training)
+            x, training=training)
         layers.append(x)
         x = self.conv4(x)
         layers.append(x)
         x = self.pool4(x)
         layers.append(x)
         x = self.bn4(
-            x, conv_weights=self.conv4.weights[0].value(), training=training)
+            x, training=training)
         layers.append(x)
 
         x = self.conv5(x)
         layers.append(x)
         x = self.bn5(
-            x, conv_weights=self.conv5.weights[0].value(), training=training)
+            x, training=training)
         layers.append(x)
         x = self.conv6(x)
         layers.append(x)
         x = self.bn6(
-            x, conv_weights=self.conv6.weights[0].value(), training=training)
+            x, training=training)
         layers.append(x)
         x = self.conv7(x)
         layers.append(x)
         x = self.pool7(x)
         layers.append(x)
         x = self.bn7(
-            x, conv_weights=self.conv7.weights[0].value(), training=training)
+            x, training=training)
         layers.append(x)
 
         x = self.conv8(x)
         layers.append(x)
         x = self.bn8(
-            x, conv_weights=self.conv8.weights[0].value(), training=training)
+            x, training=training)
         layers.append(x)
         x = self.conv9(x)
         layers.append(x)
         x = self.bn9(
-            x, conv_weights=self.conv9.weights[0].value(), training=training)
+            x, training=training)
         layers.append(x)
         x = self.conv10(x)
         layers.append(x)
         x = self.pool10(x)
         layers.append(x)
         x = self.bn10(
-            x, conv_weights=self.conv10.weights[0].value(), training=training)
+            x, training=training)
         layers.append(x)
         x = self.flatten(x)
         layers.append(x)
@@ -183,12 +183,12 @@ class vggnet(tf.keras.Model):
         x = self.dense1(x)
         layers.append(x)
         x = self.bn11(
-            x, conv_weights=self.dense1.weights[0].value(), training=training)
+            x, training=training)
         layers.append(x)
         x = self.dense2(x)
         layers.append(x)
         x = self.bn12(
-            x, conv_weights=self.dense2.weights[0].value(), training=training)
+            x, training=training)
         layers.append(x)
         x = self.dense3(x)
         layers.append(x)

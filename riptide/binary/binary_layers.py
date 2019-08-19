@@ -229,9 +229,9 @@ class EnterInteger(keras.layers.Layer):
 
 class SpecialBatchNormalization(keras.layers.BatchNormalization):
     def __init__(self, *args, **kwargs):
-        super(SpecialBatchNormalization, self).__init__()
+        super(SpecialBatchNormalization, self).__init__(**kwargs)
 
-    def call(self, inputs, conv_weights=None, training=None):
+    def call(self, inputs, training=None):
         return super(SpecialBatchNormalization, self).call(inputs, training)
 
 
@@ -267,7 +267,6 @@ class ShiftNormalization(Layer):
   close to 0 and the activation standard deviation close to 1.
 
   Arguments:
-    conv_weights: Filter value tensor of convolution preceding shiftnorm.
     axis: Integer, the axis that should be normalized
         (typically the features axis).
         For instance, after a `Conv2D` layer with
@@ -323,8 +322,8 @@ class ShiftNormalization(Layer):
   """
 
     def __init__(self,
+                 previous_layer,
                  axis=-1,
-                 binary_dense=False,
                  momentum=0.99,
                  epsilon=1e-3,
                  center=False,
@@ -347,11 +346,12 @@ class ShiftNormalization(Layer):
             name=name, trainable=trainable, **kwargs)
         self.scope = Config.current
         self.bits = self.scope.bits
+        self.previous_layer = previous_layer
         if isinstance(axis, list):
             self.axis = axis[:]
         else:
             self.axis = axis
-        self.binary_dense = binary_dense
+        self.binary_dense = isinstance(previous_layer, BinaryDense)
         self.momentum = momentum
         self.epsilon = epsilon
         self.center = center
@@ -599,7 +599,9 @@ class ShiftNormalization(Layer):
 
         return (r, d, new_mean, new_variance)
 
-    def call(self, inputs, conv_weights=None, training=None):
+    def call(self, inputs, training=None):
+        # Extract weights of previous layer to compute proper scale.
+        previous_weights = self.previous_layer.weights[0].value()
         original_training_value = training
         if training is None:
             training = K.learning_phase()
@@ -705,7 +707,7 @@ class ShiftNormalization(Layer):
             variance,
             mean,
             self.epsilon,
-            conv_weights,
+            previous_weights,
             self.extra_scale,
             self.bits,
             rescale=True)
