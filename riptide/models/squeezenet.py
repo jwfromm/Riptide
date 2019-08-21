@@ -1,39 +1,34 @@
 import tensorflow as tf
 import tensorflow.keras.layers as nn
 
-def FireLayer(inputs, squeeze_channels, expand1x1_channels, expand3x3_channels):
-    f = _make_fire_conv(inputs, squeeze_channels, 1)
-    f1x1 = _make_fire_conv(f, expand1x1_channels, 1)
-    f3x3 = _make_fire_conv(f, expand3x3_channels, 3, 'same')
-    fout = nn.Concatenate(axis=-1)([f1x1, f3x3])
-    return fout
+bnmomemtum=0.9
+def fire(x, squeeze, expand):
+    y  = tf.keras.layers.Conv2D(filters=squeeze, kernel_size=1, activation='relu', padding='same')(x)
+    y = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)(y)
+    y1 = tf.keras.layers.Conv2D(filters=expand//2, kernel_size=1, activation='relu', padding='same')(y)
+    y1 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)(y1)
+    y3 = tf.keras.layers.Conv2D(filters=expand//2, kernel_size=3, activation='relu', padding='same')(y)
+    y3 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)(y3)
+    return tf.keras.layers.concatenate([y1, y3])
 
-def _make_fire_conv(inputs, channels, kernel_size, padding='valid'):
-    out = nn.Conv2D(channels, kernel_size, padding=padding)(inputs)
-    out = nn.Activation('relu')(out)
-    return out
+def fire_module(squeeze, expand):
+    return lambda x: fire(x, squeeze, expand)
 
 def SqueezeNet(classes=1000):
-    inputs = nn.Input(shape=[224, 224, 3])
-    x = nn.Conv2D(64, kernel_size=3, strides=2)(inputs)
-    x = nn.Activation('relu')(x)
-    x = nn.MaxPool2D(pool_size=3, strides=2)(x)
-    x = FireLayer(x, 16, 64, 64)
-    x = FireLayer(x, 16, 64, 64)
-    x = nn.MaxPool2D(pool_size=3, strides=2)(x)
-    x = FireLayer(x, 32, 128, 128)
-    x = FireLayer(x, 32, 128, 128)
-    x = nn.MaxPool2D(pool_size=3, strides=2)(x)
-    x = FireLayer(x, 48, 192, 192)
-    x = FireLayer(x, 48, 192, 192)
-    x = FireLayer(x, 64, 256, 256)
-    x = FireLayer(x, 64, 256, 256)
-    x = FireLayer(x, 64, 256, 256)
-    x = nn.Dropout(0.5)(x)
+    x = tf.keras.layers.Input(shape=[224, 224, 3])
 
-    x = nn.Conv2D(classes, kernel_size=1)(x)
-    x = nn.Activation('relu')(x)
-    x = nn.AvgPool2D(13)(x)
-    x = nn.Flatten()(x)
+    y = tf.keras.layers.Conv2D(kernel_size=3, filters=32, padding='same', use_bias=True, activation='relu')(x)
+    y = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)(y)
+    y = fire_module(24, 48)(y)
+    y = tf.keras.layers.MaxPooling2D(pool_size=2)(y)
+    y = fire_module(48, 96)(y)
+    y = tf.keras.layers.MaxPooling2D(pool_size=2)(y)
+    y = fire_module(64, 128)(y)
+    y = tf.keras.layers.MaxPooling2D(pool_size=2)(y)
+    y = fire_module(48, 96)(y)
+    y = tf.keras.layers.MaxPooling2D(pool_size=2)(y)
+    y = fire_module(24, 48)(y)
+    y = tf.keras.layers.GlobalAveragePooling2D()(y)
+    y = tf.keras.layers.Dense(1000, activation='softmax')(y)
 
-    return tf.keras.models.Model(inputs=inputs, outputs=x)
+    return tf.keras.models.Model(x, y)
