@@ -1,7 +1,6 @@
 import os
 import tensorflow as tf
 from riptide.binary import binary_layers as nn
-from riptide.utils.sequential import forward_layer_list
 
 
 class vggnet(tf.keras.Model):

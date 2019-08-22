@@ -61,6 +61,7 @@ class alexnet(tf.keras.Model):
         self.bn7 = nn.NormalBatchNormalization()
         self.dense8 = nn.NormalDense(classes, use_bias=True, activation='softmax')
         #self.scalu = nn.Scalu()
+        self.softmax = nn.Activation('softmax')
 
     def call(self, inputs, training=None):
         x = self.conv1(inputs)
@@ -88,5 +89,6 @@ class alexnet(tf.keras.Model):
         x = self.bn7(x, training=training)
         x = self.dense8(x)
         #x = self.scalu(x)
+        x = self.softmax(x)
 
         return x

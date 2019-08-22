@@ -12,7 +12,7 @@ from tensorflow.python.keras.engine.base_layer import Layer
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.training import distribution_strategy_context
 from tensorflow.python.util.tf_export import tf_export
-from tensorflow.keras.layers import GlobalAveragePooling2D, Flatten, Activation, PReLU
+from tensorflow.keras.layers import GlobalAveragePooling2D, Flatten, Activation, PReLU, Input, Concatenate
 """Quantization scope, defines the modification of operator"""
 
 
@@ -178,14 +178,15 @@ class BinaryDense(keras.layers.Dense):
 
 
 class Scalu(keras.layers.Layer):
-    def __init__(self):
+    def __init__(self, scale=0.001):
         super(Scalu, self).__init__()
+        self.scale = scale
 
     def build(self, input_shape):
         self.scale = self.add_variable(
             'scale',
             shape=[1],
-            initializer=tf.keras.initializers.Constant(value=0.001))
+            initializer=tf.keras.initializers.Constant(value=self.scale))
 
     def call(self, input):
         return input * self.scale
