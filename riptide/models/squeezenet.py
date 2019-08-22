@@ -2,7 +2,7 @@ import tensorflow as tf
 from riptide.binary import binary_layers as nn
 #import tensorflow.keras.layers as nn
 
-bnmomemtum=0.9
+bnmomentum=0.9
 
 class SqueezeNet(tf.keras.Model):
     def __init__(self, classes=1000):
@@ -10,59 +10,59 @@ class SqueezeNet(tf.keras.Model):
         self.classes = classes
 
         self.c1 = nn.NormalConv2D(kernel_size=3, filters=32, padding='same', use_bias=True, activation='relu')
-        self.b1 = nn.NormalBatchNormalization(momentum=bnmomemtum)
+        self.b1 = nn.NormalBatchNormalization(momentum=bnmomentum)
 
         self.f1c1 = nn.BinaryConv2D(filters=24, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f1b1 = nn.BatchNormalization(self.f1c1, momentum=bnmomemtum)
+        self.f1b1 = nn.BatchNormalization(self.f1c1, momentum=bnmomentum)
         self.f1c2 = nn.BinaryConv2D(filters=48//2, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f1b2 = nn.BatchNormalization(self.f1c2, momentum=bnmomemtum)
+        self.f1b2 = nn.BatchNormalization(self.f1c2, momentum=bnmomentum)
         self.f1c3 = nn.BinaryConv2D(filters=48//2, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f1b3 = nn.BatchNormalization(self.f1c3, momentum=bnmomemtum)
+        self.f1b3 = nn.BatchNormalization(self.f1c3, momentum=bnmomentum)
         self.f1concat = nn.Concatenate(axis=-1)
 
         self.mp1 = nn.MaxPool2D(pool_size=2)
 
         self.f2c1 = nn.BinaryConv2D(filters=48, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f2b1 = nn.BatchNormalization(self.f2c1, momentum=bnmomemtum)
+        self.f2b1 = nn.BatchNormalization(self.f2c1, momentum=bnmomentum)
         self.f2c2 = nn.BinaryConv2D(filters=96//2, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f2b2 = nn.BatchNormalization(self.f2c2, momentum=bnmomemtum)
+        self.f2b2 = nn.BatchNormalization(self.f2c2, momentum=bnmomentum)
         self.f2c3 = nn.BinaryConv2D(filters=96//2, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f2b3 = nn.BatchNormalization(self.f2c3, momentum=bnmomemtum)
+        self.f2b3 = nn.BatchNormalization(self.f2c3, momentum=bnmomentum)
         self.f2concat = nn.Concatenate(axis=-1)
 
         self.mp2 = nn.MaxPool2D(pool_size=2)
 
         self.f3c1 = nn.BinaryConv2D(filters=64, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f3b1 = nn.BatchNormalization(self.f3c1, momentum=bnmomemtum)
+        self.f3b1 = nn.BatchNormalization(self.f3c1, momentum=bnmomentum)
         self.f3c2 = nn.BinaryConv2D(filters=128//2, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f3b2 = nn.BatchNormalization(self.f3c2, momentum=bnmomemtum)
+        self.f3b2 = nn.BatchNormalization(self.f3c2, momentum=bnmomentum)
         self.f3c3 = nn.BinaryConv2D(filters=128//2, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f3b3 = nn.BatchNormalization(self.f3c3, momentum=bnmomemtum)
+        self.f3b3 = nn.BatchNormalization(self.f3c3, momentum=bnmomentum)
         self.f3concat = nn.Concatenate(axis=-1)
 
         self.mp3 = nn.MaxPool2D(pool_size=2)
 
         self.f4c1 = nn.BinaryConv2D(filters=48, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f4b1 = nn.BatchNormalization(self.f4c1, momentum=bnmomemtum)
+        self.f4b1 = nn.BatchNormalization(self.f4c1, momentum=bnmomentum)
         self.f4c2 = nn.BinaryConv2D(filters=96//2, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f4b2 = nn.BatchNormalization(self.f4c2, momentum=bnmomemtum)
+        self.f4b2 = nn.BatchNormalization(self.f4c2, momentum=bnmomentum)
         self.f4c3 = nn.BinaryConv2D(filters=96//2, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f4b3 = nn.BatchNormalization(self.f4c3, momentum=bnmomemtum)
+        self.f4b3 = nn.BatchNormalization(self.f4c3, momentum=bnmomentum)
         self.f4concat = nn.Concatenate(axis=-1)
 
         self.mp4 = nn.MaxPool2D(pool_size=2)
 
         self.f5c1 = nn.BinaryConv2D(filters=24, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f5b1 = nn.BatchNormalization(self.f5c1, momentum=bnmomemtum)
+        self.f5b1 = nn.BatchNormalization(self.f5c1, momentum=bnmomentum)
         self.f5c2 = nn.BinaryConv2D(filters=48//2, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f5b2 = nn.BatchNormalization(self.f5c2, momentum=bnmomemtum)
+        self.f5b2 = nn.BatchNormalization(self.f5c2, momentum=bnmomentum)
         self.f5c3 = nn.BinaryConv2D(filters=48//2, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f5b3 = nn.BatchNormalization(self.f5c3, momentum=bnmomemtum)
+        self.f5b3 = nn.BatchNormalization(self.f5c3, momentum=bnmomentum)
         self.f5concat = nn.Concatenate(axis=-1)
 
         self.avgpool = nn.GlobalAveragePooling2D()
-        self.classifier = nn.NormalDense(1000, use_bias=False)
-        #self.scalu = nn.Scalu(scale=0.1)
+        self.classifier = nn.BinaryDense(1000, use_bias=False)
+        self.classifier_bn = nn.BatchNormalization(self.classifier, momentum=bnmomentum)
         self.softmax = nn.Activation('softmax')
 
 
@@ -119,8 +119,11 @@ class SqueezeNet(tf.keras.Model):
         y = self.f5concat([y1x, y3x])
 
         y = self.avgpool(y)
+        tf.compat.v1.summary.histogram('classifier_in', y)
         y = self.classifier(y)
-        #y = self.scalu(y)
+        tf.compat.v1.summary.histogram('classifier_out', y)
+        y = self.classifier_bn(y, training=training)
+        tf.compat.v1.summary.histogram('bn_out', y)
         y = self.softmax(y)
         tf.compat.v1.summary.histogram('output', y)
 
