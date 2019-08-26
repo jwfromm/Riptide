@@ -223,6 +223,7 @@ class EnterInteger(keras.layers.Layer):
         self.scale = scale
         self.scope = Config.current
         self.bits = self.scope.bits
+        self.quantize = self.scope.bits != None
 
     def call(self, inputs):
         return self.scale * inputs

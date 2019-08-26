@@ -11,6 +11,7 @@ class SqueezeNet(tf.keras.Model):
 
         self.c1 = nn.NormalConv2D(kernel_size=3, filters=32, padding='same', use_bias=True, activation='relu')
         self.b1 = nn.NormalBatchNormalization(momentum=bnmomentum)
+        self.quantize = nn.EnterInteger(1.0)
 
         self.f1c1 = nn.BinaryConv2D(filters=24, kernel_size=1, activation='relu', padding='same', use_bias=False)
         self.f1b1 = nn.BatchNormalization(self.f1c1, momentum=bnmomentum)
@@ -69,6 +70,7 @@ class SqueezeNet(tf.keras.Model):
     def call(self, x, training=None):
         y = self.c1(x)
         y = self.b1(y, training=training)
+        y = self.quantize(y)
 
         y = self.f1c1(y)
         y = self.f1b1(y, training=training)
