@@ -33,7 +33,7 @@ parser.add_argument(
 parser.add_argument(
     '--model',
     type=str,
-    choices=['vggnet', 'vgg11', 'resnet18', 'alexnet', 'darknet'],
+    choices=['vggnet', 'vgg11', 'resnet18', 'alexnet', 'darknet', 'squeezenet', 'squeezenet_normal'],
     help='neural network model',
     required=True)
 parser.add_argument(
