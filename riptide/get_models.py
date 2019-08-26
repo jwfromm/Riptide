@@ -1,6 +1,6 @@
 from .models import cifar_resnet
 from .models import resnetv1b as resnet
-from .models import vgg11, vggnet, resnet18, alexnet, vggnet_normal, squeezenet
+from .models import vgg11, vggnet, resnet18, alexnet, vggnet_normal, squeezenet, squeezenet_normal
 from .binary.models import q_cifar_resnet
 from .binary.models import q_resnetv1b as q_resnet
 
@@ -25,6 +25,7 @@ def get_model(name, **kwargs):
         'vggnet': vggnet.vggnet,
         'q_vggnet': vggnet.vggnet,
         'squeezenet': squeezenet.SqueezeNet,
+        'squeezenet_normal': squeezenet_normal.SqueezeNet,
     }
     name = name.lower()
     if name not in models:
