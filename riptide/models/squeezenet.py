@@ -62,9 +62,11 @@ class SqueezeNet(tf.keras.Model):
         self.f5concat = nn.Concatenate(axis=-1)
 
         self.avgpool = nn.GlobalAveragePooling2D()
-        self.classifier = nn.BinaryDense(1000, use_bias=False)
-        self.classifier_bn = nn.BatchNormalization(self.classifier, momentum=bnmomentum)
-        self.softmax = nn.Activation('softmax')
+        #self.classifier = nn.BinaryDense(1000, use_bias=False)
+        #self.classifier_bn = nn.BatchNormalization(self.classifier, momentum=bnmomentum)
+        #self.softmax = nn.Activation('softmax')
+        self.exitint = nn.ExitInteger()
+        self.classifier = nn.NormalDense(1000)
 
 
     def call(self, x, training=None):
@@ -122,11 +124,12 @@ class SqueezeNet(tf.keras.Model):
 
         y = self.avgpool(y)
         tf.compat.v1.summary.histogram('classifier_in', y)
+        y = self.exitint(y)
         y = self.classifier(y)
         tf.compat.v1.summary.histogram('classifier_out', y)
-        y = self.classifier_bn(y, training=training)
-        tf.compat.v1.summary.histogram('bn_out', y)
-        y = self.softmax(y)
-        tf.compat.v1.summary.histogram('output', y)
+        #y = self.classifier_bn(y, training=training)
+        #tf.compat.v1.summary.histogram('bn_out', y)
+        #y = self.softmax(y)
+        #tf.compat.v1.summary.histogram('output', y)
 
         return y

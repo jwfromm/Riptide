@@ -228,6 +228,10 @@ class EnterInteger(keras.layers.Layer):
     def call(self, inputs):
         return self.scale * inputs
 
+class ExitInteger(keras.layers.Layer):
+    def call(self, inputs):
+        return inputs
+
 
 class SpecialBatchNormalization(keras.layers.BatchNormalization):
     def __init__(self, *args, **kwargs):
