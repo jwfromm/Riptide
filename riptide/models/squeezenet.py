@@ -13,17 +13,17 @@ class SqueezeNet(tf.keras.Model):
         self.b1 = nn.NormalBatchNormalization(momentum=bnmomentum)
         self.quantize = nn.EnterInteger(1.0)
 
-        self.f1c1 = nn.BinaryConv2D(filters=24, kernel_size=1, activation='relu', padding='same', use_bias=False)
+        self.f1c1 = nn.BinaryConv2D(filters=32, kernel_size=1, activation='relu', padding='same', use_bias=False)
         self.f1b1 = nn.BatchNormalization(self.f1c1, momentum=bnmomentum)
-        self.f1c2 = nn.BinaryConv2D(filters=48//2, kernel_size=1, activation='relu', padding='same', use_bias=False)
+        self.f1c2 = nn.BinaryConv2D(filters=64//2, kernel_size=1, activation='relu', padding='same', use_bias=False)
         self.f1b2 = nn.BatchNormalization(self.f1c2, momentum=bnmomentum)
-        self.f1c3 = nn.BinaryConv2D(filters=48//2, kernel_size=3, activation='relu', padding='same', use_bias=False)
+        self.f1c3 = nn.BinaryConv2D(filters=64//2, kernel_size=3, activation='relu', padding='same', use_bias=False)
         self.f1b3 = nn.BatchNormalization(self.f1c3, momentum=bnmomentum)
         self.f1concat = nn.Concatenate(axis=-1)
 
         self.mp1 = nn.MaxPool2D(pool_size=2)
 
-        self.f2c1 = nn.BinaryConv2D(filters=48, kernel_size=1, activation='relu', padding='same', use_bias=False)
+        self.f2c1 = nn.BinaryConv2D(filters=64, kernel_size=1, activation='relu', padding='same', use_bias=False)
         self.f2b1 = nn.BatchNormalization(self.f2c1, momentum=bnmomentum)
         self.f2c2 = nn.BinaryConv2D(filters=96//2, kernel_size=1, activation='relu', padding='same', use_bias=False)
         self.f2b2 = nn.BatchNormalization(self.f2c2, momentum=bnmomentum)
@@ -43,7 +43,7 @@ class SqueezeNet(tf.keras.Model):
 
         self.mp3 = nn.MaxPool2D(pool_size=2)
 
-        self.f4c1 = nn.BinaryConv2D(filters=48, kernel_size=1, activation='relu', padding='same', use_bias=False)
+        self.f4c1 = nn.BinaryConv2D(filters=64, kernel_size=1, activation='relu', padding='same', use_bias=False)
         self.f4b1 = nn.BatchNormalization(self.f4c1, momentum=bnmomentum)
         self.f4c2 = nn.BinaryConv2D(filters=96//2, kernel_size=1, activation='relu', padding='same', use_bias=False)
         self.f4b2 = nn.BatchNormalization(self.f4c2, momentum=bnmomentum)
@@ -53,11 +53,11 @@ class SqueezeNet(tf.keras.Model):
 
         self.mp4 = nn.MaxPool2D(pool_size=2)
 
-        self.f5c1 = nn.BinaryConv2D(filters=24, kernel_size=1, activation='relu', padding='same', use_bias=False)
+        self.f5c1 = nn.BinaryConv2D(filters=32, kernel_size=1, activation='relu', padding='same', use_bias=False)
         self.f5b1 = nn.BatchNormalization(self.f5c1, momentum=bnmomentum)
-        self.f5c2 = nn.BinaryConv2D(filters=48//2, kernel_size=1, activation='relu', padding='same', use_bias=False)
+        self.f5c2 = nn.BinaryConv2D(filters=64//2, kernel_size=1, activation='relu', padding='same', use_bias=False)
         self.f5b2 = nn.BatchNormalization(self.f5c2, momentum=bnmomentum)
-        self.f5c3 = nn.BinaryConv2D(filters=48//2, kernel_size=3, activation='relu', padding='same', use_bias=False)
+        self.f5c3 = nn.BinaryConv2D(filters=64//2, kernel_size=3, activation='relu', padding='same', use_bias=False)
         self.f5b3 = nn.BatchNormalization(self.f5c3, momentum=bnmomentum)
         self.f5concat = nn.Concatenate(axis=-1)
 

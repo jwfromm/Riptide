@@ -11,17 +11,17 @@ class SqueezeNet(tf.keras.Model):
         self.c1 = tf.keras.layers.Conv2D(kernel_size=3, filters=32, padding='same', use_bias=True, activation='relu')
         self.b1 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)
 
-        self.f1c1 = tf.keras.layers.Conv2D(filters=24, kernel_size=1, activation='relu', padding='same')
+        self.f1c1 = tf.keras.layers.Conv2D(filters=32, kernel_size=1, activation='relu', padding='same')
         self.f1b1 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)
-        self.f1c2 = tf.keras.layers.Conv2D(filters=48//2, kernel_size=1, activation='relu', padding='same')
+        self.f1c2 = tf.keras.layers.Conv2D(filters=64//2, kernel_size=1, activation='relu', padding='same')
         self.f1b2 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)
-        self.f1c3 = tf.keras.layers.Conv2D(filters=48//2, kernel_size=3, activation='relu', padding='same')
+        self.f1c3 = tf.keras.layers.Conv2D(filters=64//2, kernel_size=3, activation='relu', padding='same')
         self.f1b3 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)
         self.f1concat = tf.keras.layers.Concatenate(axis=-1)
 
         self.mp1 = tf.keras.layers.MaxPooling2D(pool_size=2)
 
-        self.f2c1 = tf.keras.layers.Conv2D(filters=48, kernel_size=1, activation='relu', padding='same')
+        self.f2c1 = tf.keras.layers.Conv2D(filters=64, kernel_size=1, activation='relu', padding='same')
         self.f2b1 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)
         self.f2c2 = tf.keras.layers.Conv2D(filters=96//2, kernel_size=1, activation='relu', padding='same')
         self.f2b2 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)
@@ -41,7 +41,7 @@ class SqueezeNet(tf.keras.Model):
 
         self.mp3 = tf.keras.layers.MaxPooling2D(pool_size=2)
 
-        self.f4c1 = tf.keras.layers.Conv2D(filters=48, kernel_size=1, activation='relu', padding='same')
+        self.f4c1 = tf.keras.layers.Conv2D(filters=64, kernel_size=1, activation='relu', padding='same')
         self.f4b1 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)
         self.f4c2 = tf.keras.layers.Conv2D(filters=96//2, kernel_size=1, activation='relu', padding='same')
         self.f4b2 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)
@@ -51,11 +51,11 @@ class SqueezeNet(tf.keras.Model):
 
         self.mp4 = tf.keras.layers.MaxPooling2D(pool_size=2)
 
-        self.f5c1 = tf.keras.layers.Conv2D(filters=24, kernel_size=1, activation='relu', padding='same')
+        self.f5c1 = tf.keras.layers.Conv2D(filters=32, kernel_size=1, activation='relu', padding='same')
         self.f5b1 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)
-        self.f5c2 = tf.keras.layers.Conv2D(filters=48//2, kernel_size=1, activation='relu', padding='same')
+        self.f5c2 = tf.keras.layers.Conv2D(filters=64//2, kernel_size=1, activation='relu', padding='same')
         self.f5b2 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)
-        self.f5c3 = tf.keras.layers.Conv2D(filters=48//2, kernel_size=3, activation='relu', padding='same')
+        self.f5c3 = tf.keras.layers.Conv2D(filters=64//2, kernel_size=3, activation='relu', padding='same')
         self.f5b3 = tf.keras.layers.BatchNormalization(momentum=bnmomemtum)
         self.f5concat = tf.keras.layers.Concatenate(axis=-1)
 

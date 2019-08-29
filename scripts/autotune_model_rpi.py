@@ -84,6 +84,7 @@ with target:
         model, shape={
             'input_1': [1, 224, 224, 3]
         }, layout='NHWC')
+net = net['main']
 num_threads = 4
 os.environ["TVM_NUM_THREADS"] = str(num_threads)
 
@@ -170,7 +171,7 @@ def tune_and_evaluate(tuning_opt):
         net,
         target=target,
         params=params,
-        ops=(relay.op.nn.conv2d, relay.op.nn.bitserial_conv2d, relay.op.nn.bitserial_dense))
+        ops=(relay.op.nn.conv2d, relay.op.nn.bitserial_conv2d, relay.op.nn.bitserial_dense, relay.op.nn.nn.dense))
 
     # Run tuning tasks.
     print("Tuning...")
