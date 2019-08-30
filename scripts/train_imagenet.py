@@ -112,7 +112,7 @@ def main(argv):
         loss_object = tf.keras.losses.SparseCategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
         def loss_fn(labels, predictions):
             per_example_loss = loss_object(labels, predictions)
-            return tf.nn.compute_average_loss(per_example_loss, global_batch_size=FLAGS.batch_size * num_gpus)
+            return tf.nn.compute_average_loss(per_example_loss, global_batch_size=FLAGS.batch_size)
 
         # Get proper mode for batchnorm and dropout, must be python bool.
         training = (mode == tf.estimator.ModeKeys.TRAIN)
