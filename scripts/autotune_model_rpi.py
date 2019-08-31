@@ -33,7 +33,7 @@ parser.add_argument(
 parser.add_argument(
     '--model',
     type=str,
-    choices=['vggnet', 'vgg11', 'resnet18', 'alexnet', 'darknet', 'squeezenet', 'squeezenet_normal'],
+    choices=['vggnet', 'vgg11', 'resnet18', 'alexnet', 'darknet', 'squeezenet', 'squeezenet_normal', 'vggnet_normal'],
     help='neural network model',
     required=True)
 parser.add_argument(
@@ -55,6 +55,10 @@ parser.add_argument(
     default='log.log',
     help='logfile to store tuning results',
     required=False)
+parser.add_argument(
+    '--unipolar',
+    action='store_false',
+    help='Whether to use bipolar or unipolar quantization')
 args = parser.parse_args()
 model = args.model
 activation_bits = args.activation_bits
@@ -68,7 +72,8 @@ config = Config(
     bits=activation_bits,
     use_act=False,
     use_bn=False,
-    use_maxpool=True)
+    use_maxpool=True,
+    bipolar=args.unipolar)
 
 with config:
     model = get_model(model)

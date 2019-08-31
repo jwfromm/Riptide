@@ -11,7 +11,8 @@ import tvm.relay.testing.tf as tf_testing
 from tvm.autotvm.tuner import XGBTuner, GATuner, GridSearchTuner
 from tvm.contrib.util import tempdir
 from tvm.contrib import util
-import tvm.contrib.graph_runtime as runtime
+#import tvm.contrib.graph_runtime as runtime
+import tvm.contrib.debugger.debug_runtime as runtime
 
 import riptide.models
 from riptide.get_models import get_model
@@ -33,7 +34,7 @@ parser.add_argument(
 parser.add_argument(
     '--model',
     type=str,
-    choices=['vggnet', 'vgg11', 'resnet18', 'alexnet', 'darknet', 'squeezenet', 'squeezenet_normal'],
+    choices=['vggnet', 'vgg11', 'resnet18', 'alexnet', 'darknet', 'squeezenet', 'squeezenet_normal', 'squeezenet_batchnorm', 'vggnet_normal'],
     help='neural network model',
     required=True)
 parser.add_argument(
@@ -42,6 +43,10 @@ parser.add_argument(
     default='log.log',
     help='logfile to store tuning results',
     required=False)
+parser.add_argument(
+    '--unipolar',
+    action='store_false',
+    help='Whether to use bipolar or unipolar quantization')
 args = parser.parse_args()
 model = args.model
 activation_bits = args.activation_bits
@@ -53,7 +58,8 @@ config = Config(
     bits=activation_bits,
     use_act=False,
     use_bn=False,
-    use_maxpool=True)
+    use_maxpool=True,
+    bipolar=args.unipolar)
 
 with config:
     model = get_model(model)
@@ -90,8 +96,9 @@ with autotvm.apply_history_best(log_file):
 
         # Upload module to device
         print("Upload...")
-        remote = autotvm.measure.request_remote(
-            device_key, 'fleet.cs.washington.edu', 9190, timeout=10000)
+        #remote = autotvm.measure.request_remote(
+        #    device_key, 'fleet.cs.washington.edu', 9190, timeout=10000)
+        remote = tvm.rpc.connect('jwfromm-rpi', 9090)
         # upload the library to remote device and load it
         remote.upload(lib_fname)
         rlib = remote.load_module('net.tar')
@@ -108,7 +115,7 @@ with autotvm.apply_history_best(log_file):
         module.run()
         # Evaluate
         print("Evaluate inference time cost...")
-        ftimer = module.module.time_evaluator("run", ctx, number=10, repeat=1)
+        ftimer = module.module.time_evaluator("run", ctx, number=1, repeat=1)
         prof_res = np.array(ftimer().results) * 1000  # Convert to milliseconds
         print("Mean inference time (std dev): %.2f ms (%.2f ms)" %
               (np.mean(prof_res), np.std(prof_res)))

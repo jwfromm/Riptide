@@ -256,6 +256,10 @@ def BatchNormalization(*args, **kwargs):
     else:
         return ShiftNormalization(*args, **kwargs)
 
+class UnfusedBatchNorm(keras.layers.BatchNormalization):
+    def __init__(self, *args, **kwargs):
+        super(UnfusedBatchNorm, self).__init__(*args, **kwargs)
+
 
 def MaxPool2D(*args, **kwargs):
     scope = Config.current
