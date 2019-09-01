@@ -103,14 +103,14 @@ class vggnet(tf.keras.Model):
         self.bn10 = nn.BatchNormalization(self.conv10)
         self.flatten = nn.Flatten()
 
-        self.exit_int = nn.ExitInteger()
-        self.dense1 = nn.NormalDense(4096, activation='relu')
-        self.bn11 = nn.NormalBatchNormalization()
-        self.dense2 = nn.NormalDense(4096, activation='relu')
-        self.bn12 = nn.NormalBatchNormalization()
-        #self.scalu = nn.Scalu()
-        self.dense3 = nn.NormalDense(classes)
-        self.softmax = nn.Activation('softmax')
+        #self.exit_int = nn.ExitInteger()
+        #self.dense1 = nn.NormalDense(4096, activation='relu')
+        #self.bn11 = nn.NormalBatchNormalization()
+        #self.dense2 = nn.NormalDense(4096, activation='relu')
+        #self.bn12 = nn.NormalBatchNormalization()
+        ##self.scalu = nn.Scalu()
+        #self.dense3 = nn.NormalDense(classes)
+        #self.softmax = nn.Activation('softmax')
 
     def call(self, inputs, training=None, debug=False):
         layers = []
@@ -180,23 +180,23 @@ class vggnet(tf.keras.Model):
         x = self.flatten(x)
         layers.append(x)
 
-        x = self.exit_int(x)
-        x = self.dense1(x)
-        layers.append(x)
-        x = self.bn11(
-            x, training=training)
-        layers.append(x)
-        x = self.dense2(x)
-        layers.append(x)
-        x = self.bn12(
-            x, training=training)
-        layers.append(x)
-        x = self.dense3(x)
-        layers.append(x)
-        #x = self.scalu(x)
+        #x = self.exit_int(x)
+        #x = self.dense1(x)
         #layers.append(x)
-        x = self.softmax(x)
-        tf.compat.v1.summary.histogram('output', x)
+        #x = self.bn11(
+        #    x, training=training)
+        #layers.append(x)
+        #x = self.dense2(x)
+        #layers.append(x)
+        #x = self.bn12(
+        #    x, training=training)
+        #layers.append(x)
+        #x = self.dense3(x)
+        #layers.append(x)
+        ##x = self.scalu(x)
+        ##layers.append(x)
+        #x = self.softmax(x)
+        #tf.compat.v1.summary.histogram('output', x)
 
         if debug:
             return layers

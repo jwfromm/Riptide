@@ -1,6 +1,6 @@
 from .models import cifar_resnet
 from .models import resnetv1b as resnet
-from .models import vgg11, vggnet, resnet18, alexnet, vggnet_normal, squeezenet, squeezenet_normal, squeezenet_batchnorm
+from .models import vgg11, vggnet, resnet18, alexnet, alexnet_normal, vggnet_normal, squeezenet, squeezenet_normal, squeezenet_batchnorm
 from .binary.models import q_cifar_resnet
 from .binary.models import q_resnetv1b as q_resnet
 
@@ -8,6 +8,7 @@ from .binary.models import q_resnetv1b as q_resnet
 def get_model(name, **kwargs):
     models = {
         'alexnet': alexnet.alexnet,
+        'alexnet_normal': alexnet_normal.alexnet,
         'q_resnet18': resnet18.resnet18,
         'q_resnet34': q_resnet.resnet34_v1b,
         'q_resnet50': q_resnet.resnet50_v1b,

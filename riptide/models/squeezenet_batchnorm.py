@@ -15,78 +15,78 @@ class SqueezeNet(tf.keras.Model):
 
         # Fire 1
         self.f1c1 = nn.BinaryConv2D(filters=32, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f1b1 = nn.BatchNormalization(self.f1c1, momentum=bnmomemtum)
+        self.f1b1 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f1c2 = nn.BinaryConv2D(filters=64, kernel_size=1, activation='relu', padding='same',  use_bias=False)
-        self.f1b2 = nn.BatchNormalization(self.f1c2, momentum=bnmomemtum)
+        self.f1b2 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f1c3 = nn.BinaryConv2D(filters=64, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f1b3 = nn.BatchNormalization(self.f1c3, momentum=bnmomemtum)
+        self.f1b3 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f1concat = tf.keras.layers.Concatenate(axis=-1)
 
         # Fire 2
         self.f2c1 = nn.BinaryConv2D(filters=32, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f2b1 = nn.BatchNormalization(self.f2c1, momentum=bnmomemtum)
+        self.f2b1 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f2c2 = nn.BinaryConv2D(filters=64, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f2b2 = nn.BatchNormalization(self.f2c2, momentum=bnmomemtum)
+        self.f2b2 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f2c3 = nn.BinaryConv2D(filters=64, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f2b3 = nn.BatchNormalization(self.f2c3, momentum=bnmomemtum)
+        self.f2b3 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f2concat = tf.keras.layers.Concatenate(axis=-1)
 
         # Fire 3
         self.f3c1 = nn.BinaryConv2D(filters=32, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f3b1 = nn.BatchNormalization(self.f3c1, momentum=bnmomemtum)
+        self.f3b1 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f3c2 = nn.BinaryConv2D(filters=128, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f3b2 = nn.BatchNormalization(self.f3c2, momentum=bnmomemtum)
+        self.f3b2 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f3c3 = nn.BinaryConv2D(filters=128, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f3b3 = nn.BatchNormalization(self.f3c3, momentum=bnmomemtum)
+        self.f3b3 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f3concat = tf.keras.layers.Concatenate(axis=-1)
 
         self.mp3 = tf.keras.layers.MaxPooling2D(pool_size=2)
 
         # Fire 4
         self.f4c1 = nn.BinaryConv2D(filters=32, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f4b1 = nn.BatchNormalization(self.f4c1, momentum=bnmomemtum)
+        self.f4b1 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f4c2 = nn.BinaryConv2D(filters=128, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f4b2 = nn.BatchNormalization(self.f4c2, momentum=bnmomemtum)
+        self.f4b2 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f4c3 = nn.BinaryConv2D(filters=128, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f4b3 = nn.BatchNormalization(self.f4c3, momentum=bnmomemtum)
+        self.f4b3 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f4concat = tf.keras.layers.Concatenate(axis=-1)
 
         # Fire 5
         self.f5c1 = nn.BinaryConv2D(filters=64, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f5b1 = nn.BatchNormalization(self.f5c1, momentum=bnmomemtum)
+        self.f5b1 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f5c2 = nn.BinaryConv2D(filters=192, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f5b2 = nn.BatchNormalization(self.f5c2, momentum=bnmomemtum)
+        self.f5b2 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f5c3 = nn.BinaryConv2D(filters=192, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f5b3 = nn.BatchNormalization(self.f5c3, momentum=bnmomemtum)
+        self.f5b3 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f5concat = tf.keras.layers.Concatenate(axis=-1)
 
         # Fire 6
         self.f6c1 = nn.BinaryConv2D(filters=64, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f6b1 = nn.BatchNormalization(self.f6c1, momentum=bnmomemtum)
+        self.f6b1 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f6c2 = nn.BinaryConv2D(filters=192, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f6b2 = nn.BatchNormalization(self.f6c2, momentum=bnmomemtum)
+        self.f6b2 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f6c3 = nn.BinaryConv2D(filters=192, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f6b3 = nn.BatchNormalization(self.f6c3, momentum=bnmomemtum)
+        self.f6b3 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f6concat = tf.keras.layers.Concatenate(axis=-1)
 
         # Fire 7
         self.f7c1 = nn.BinaryConv2D(filters=64, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f7b1 = nn.BatchNormalization(self.f7c1, momentum=bnmomemtum)
+        self.f7b1 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f7c2 = nn.BinaryConv2D(filters=256, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f7b2 = nn.BatchNormalization(self.f7c2, momentum=bnmomemtum)
+        self.f7b2 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f7c3 = nn.BinaryConv2D(filters=256, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f7b3 = nn.BatchNormalization(self.f7c3, momentum=bnmomemtum)
+        self.f7b3 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f7concat = tf.keras.layers.Concatenate(axis=-1)
 
         self.mp7 = tf.keras.layers.MaxPooling2D(pool_size=2)
 
         # Fire 8
         self.f8c1 = nn.BinaryConv2D(filters=64, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f8b1 = nn.BatchNormalization(self.f8c1, momentum=bnmomemtum)
+        self.f8b1 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f8c2 = nn.BinaryConv2D(filters=256, kernel_size=1, activation='relu', padding='same', use_bias=False)
-        self.f8b2 = nn.BatchNormalization(self.f8c2, momentum=bnmomemtum)
+        self.f8b2 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f8c3 = nn.BinaryConv2D(filters=256, kernel_size=3, activation='relu', padding='same', use_bias=False)
-        self.f8b3 = nn.BatchNormalization(self.f8c3, momentum=bnmomemtum)
+        self.f8b3 = nn.UnfusedBatchNorm(momentum=bnmomemtum)
         self.f8concat = tf.keras.layers.Concatenate(axis=-1)
         self.exit_int = nn.ExitInteger()
 

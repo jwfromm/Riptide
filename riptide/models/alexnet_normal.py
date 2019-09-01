@@ -13,48 +13,46 @@ class alexnet(tf.keras.Model):
             padding='same',
             activation='relu',
             use_bias=True)
-        self.bn1 = nn.NormalBatchNormalization(center=False, scale=False)
         self.pool1 = nn.NormalMaxPool2D(pool_size=2, strides=2)
-        self.enter_int = nn.EnterInteger(scale=1.0)
+        self.bn1 = nn.NormalBatchNormalization(center=False, scale=False)
 
-        self.conv2 = nn.BinaryConv2D(
+        self.conv2 = nn.NormalConv2D(
             filters=192,
             kernel_size=5,
             strides=1,
             padding='same',
             activation='relu',
-            use_bias=False)
-        self.bn2 = nn.BatchNormalization(self.conv2)
-        self.pool2 = nn.MaxPool2D(pool_size=2, strides=2)
+            use_bias=True)
+        self.pool2 = nn.NormalMaxPool2D(pool_size=2, strides=2)
+        self.bn2 = nn.NormalBatchNormalization()
 
-        self.conv3 = nn.BinaryConv2D(
+        self.conv3 = nn.NormalConv2D(
             filters=384,
             kernel_size=3,
             strides=1,
             padding='same',
             activation='relu',
-            use_bias=False)
-        self.bn3 = nn.BatchNormalization(self.conv3)
+            use_bias=True)
+        self.bn3 = nn.NormalBatchNormalization()
 
-        self.conv4 = nn.BinaryConv2D(
+        self.conv4 = nn.NormalConv2D(
             filters=384,
             kernel_size=3,
             strides=1,
             padding='same',
             activation='relu',
-            use_bias=False)
-        self.bn4 = nn.BatchNormalization(self.conv4)
+            use_bias=True)
+        self.bn4 = nn.NormalBatchNormalization()
 
-        self.conv5 = nn.BinaryConv2D(
+        self.conv5 = nn.NormalConv2D(
             filters=256,
             kernel_size=3,
             strides=1,
             padding='same',
             activation='relu',
-            use_bias=False)
-        self.bn5 = nn.BatchNormalization(self.conv5)
-        self.pool5 = nn.MaxPool2D(pool_size=2, strides=2)
-        self.exit_int = nn.ExitInteger()
+            use_bias=True)
+        self.pool5 = nn.NormalMaxPool2D(pool_size=2, strides=2)
+        self.bn5 = nn.NormalBatchNormalization()
 
         self.flatten = nn.Flatten()
         self.dense6 = nn.NormalDense(4096, use_bias=True, activation='relu')
@@ -67,13 +65,12 @@ class alexnet(tf.keras.Model):
 
     def call(self, inputs, training=None):
         x = self.conv1(inputs)
-        x = self.bn1(x)
         x = self.pool1(x)
-        x = self.enter_int(x)
+        x = self.bn1(x)
 
         x = self.conv2(x)
-        x = self.bn2(x, training=training)
         x = self.pool2(x)
+        x = self.bn2(x, training=training)
 
         x = self.conv3(x)
         x = self.bn3(x, training=training)
@@ -82,9 +79,8 @@ class alexnet(tf.keras.Model):
         x = self.bn4(x, training=training)
 
         x = self.conv5(x)
-        x = self.bn5(x, training=training)
         x = self.pool5(x)
-        x = self.exit_int(x)
+        x = self.bn5(x, training=training)
 
         x = self.flatten(x)
         x = self.dense6(x)
