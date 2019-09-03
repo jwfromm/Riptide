@@ -178,7 +178,7 @@ class SqueezeNet(tf.keras.models.Model):
         y = self.f3p1(y)
         y1x = self.f3c2(y)
         y1x = self.f3b2(y1x, training=training)
-        y1x = self.f3p3(y1x)
+        y1x = self.f3p2(y1x)
         y3x = self.f3c3(y)
         y3x = self.f3b3(y3x, training=training)
         y3x = self.f3p3(y3x)
