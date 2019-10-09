@@ -9,6 +9,7 @@ class SqueezeNet(tf.keras.models.Model):
         self.classes = classes
         l2_reg = 5e-6
 
+        self.resize = nn.Lambda(lambda image: tf.image.resize(image, [224, 224]))
         self.c0 = nn.Conv2D(kernel_size=7, strides=2, filters=96, padding='same', activation='relu', kernel_regularizer=l2(l2_reg))
         self.mp0 = nn.MaxPooling2D(pool_size=2)
         self.b0 = nn.BatchNormalization()
@@ -140,10 +141,11 @@ class SqueezeNet(tf.keras.models.Model):
 
         # Output
         self.avgpool = nn.GlobalAveragePooling2D()
-        self.classifier = nn.Dense(1000, activation='softmax')
+        self.classifier = nn.Dense(self.classes, activation='softmax')
 
     def call(self, x, training=None):
-        y = self.c0(x)
+        y = self.resize(x)
+        y = self.c0(y)
         y = self.mp0(y)
         y = self.b0(y, training=training)
         y = self.p0(y)

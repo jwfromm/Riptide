@@ -1,6 +1,3 @@
-#FROM jwfromm/tf-gpu
-#FROM tensorflow/tensorflow:1.13.1-gpu-py3
-#FROM tensorflow/tensorflow:2.0.0a0-gpu-py3
 FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -60,42 +57,42 @@ RUN go get github.com/bazelbuild/buildtools/buildifier
 ENV PATH $PATH:/go/bin
 
 RUN pip --no-cache-dir install \
-	tensorflow-gpu==2.0.0-beta0\
-	keras_applications\
+	tensorflow-gpu \
+	keras_applications \
 	keras_preprocessing \
-        Pillow \
-        mixpanel \
-        graphviz \
-        pydot \
-        ipython \
-        pydot_ng \
-        pyyaml \
-        yapf \
-        scikit-learn \
-        scikit-image \
-        gensim \
-        cffi \
-        opencv-python \
-        bitfinex \
-        gym \
-        gym[atari] \
-        flask \
-        requests_ntlm \
-        docopt \
-        tensorboard \
-        tensorflow-hub \
-        tensorflow-probability \
-        #tensorflow-data-validation \
-        #tensorflow-transform \
-        #tensorflow-model-analysis \
-        jupyter \
-        jupyterlab \
-        keras \
-        h5py \
-        xgboost \
-        psutil \
-        seaborn \
-        lime 
+    Pillow \
+    mixpanel \
+    graphviz \
+    pydot \
+    ipython \
+    pydot_ng \
+    pyyaml \
+    yapf \
+    scikit-learn \
+    scikit-image \
+    gensim \
+    cffi \
+    opencv-python \
+    bitfinex \
+    gym \
+    gym[atari] \
+    flask \
+    requests_ntlm \
+    docopt \
+    tensorboard \
+    tensorflow-hub \
+    tensorflow-probability \
+    #tensorflow-data-validation \
+    #tensorflow-transform \
+    #tensorflow-model-analysis \
+    jupyter \
+    jupyterlab \
+    keras \
+    h5py \
+    xgboost \
+    psutil \
+    seaborn \
+    lime 
 
 ENV HOME /home
 WORKDIR /home

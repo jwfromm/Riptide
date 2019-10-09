@@ -1,6 +1,5 @@
 import tensorflow as tf
 from riptide.anneal.anneal_config import Config
-from tensorflow.python.framework import common_shapes
 
 
 @tf.custom_gradient
@@ -29,11 +28,13 @@ def AlphaQuantize(x, alpha, bits):
 
 
 class PACT(tf.keras.layers.Layer):
-    def __init__(self):
+    def __init__(self, bits=None):
         super(PACT, self).__init__()
         self.scope = Config.current
         self.quantize = self.scope.quantize
-        self.bits = self.scope.a_bits
+        self.bits = bits
+        if self.bits is None:
+            self.bits = self.scope.a_bits
         self.fixed = self.scope.fixed
 
     def build(self, input_shape):
@@ -51,11 +52,11 @@ class PACT(tf.keras.layers.Layer):
         if self.quantize:
             outputs = AlphaClip(inputs, self.alpha)
             if not self.fixed:
-                tf.compat.v1.summary.histogram('alpha', self.alpha)
+                tf.summary.histogram('alpha', self.alpha)
             with tf.name_scope('QA'):
                 outputs = AlphaQuantize(outputs, self.alpha, self.bits)
-                tf.compat.v1.summary.histogram('activation', inputs)
-                tf.compat.v1.summary.histogram('quantized_activation', outputs)
+                tf.summary.histogram('activation', inputs)
+                tf.summary.histogram('quantized_activation', outputs)
         else:
             outputs = tf.nn.relu(inputs)
         return outputs
@@ -72,6 +73,7 @@ def get_sawb_coefficients(bits):
     coefficient_dict = {1: [0., 1.], 2: [3.19, -2.14], 3: [7.40, -6.66], 4: [11.86, -11.68],
                         8: [32.27, -35.46], 16: [34.26, -37.60], 32: [40.60, -45.33]}
     return coefficient_dict[bits]
+
 
 @tf.custom_gradient
 def SAWBQuantize(x, alpha, bits):
@@ -92,11 +94,13 @@ def SAWBQuantize(x, alpha, bits):
 
 
 class SAWBConv2D(tf.keras.layers.Conv2D):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, bits=None, *args, **kwargs):
         super(SAWBConv2D, self).__init__(*args, **kwargs)
         self.scope = Config.current
         self.quantize = self.scope.quantize
-        self.bits = self.scope.w_bits
+        self.bits = bits
+        if self.bits is None:
+            self.bits = self.scope.w_bits
         if self.quantize:
             self.c1, self.c2 = get_sawb_coefficients(self.bits)
 
@@ -109,8 +113,8 @@ class SAWBConv2D(tf.keras.layers.Conv2D):
             # Quantize kernel
             with tf.name_scope("QW"):
                 kernel = SAWBQuantize(self.kernel, alpha, self.bits)
-                tf.compat.v1.summary.histogram("weight", self.kernel)
-                tf.compat.v1.summary.histogram("quantized_weight", kernel)
+                tf.summary.histogram("weight", self.kernel)
+                tf.summary.histogram("quantized_weight", kernel)
         else:
             kernel = self.kernel
 
@@ -132,11 +136,13 @@ class SAWBConv2D(tf.keras.layers.Conv2D):
 
 
 class SAWBDense(tf.keras.layers.Dense):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, bits=None, *args, **kwargs):
         super(SAWBDense, self).__init__(*args, **kwargs)
         self.scope = Config.current
         self.quantize = self.scope.quantize
-        self.bits = self.scope.w_bits
+        self.bits = bits
+        if self.bits is None:
+            self.bits = self.scope.w_bits
         if self.quantize:
             self.c1, self.c2 = get_sawb_coefficients(self.bits)
 
@@ -147,17 +153,17 @@ class SAWBDense(tf.keras.layers.Dense):
                     tf.abs(self.kernel))
             with tf.name_scope("QW"):
                 kernel = SAWBQuantize(self.kernel, alpha, self.bits)
-                tf.compat.v1.summary.histogram("weight", self.kernel)
-                tf.compat.v1.summary.histogram("quantized_weight", kernel)
+                tf.summary.histogram("weight", self.kernel)
+                tf.summary.histogram("quantized_weight", kernel)
         else:
             kernel = self.kernel
 
-        rank = common_shapes.rank(inputs)
+        rank = len(inputs.shape)
         if rank > 2:
             # Broadcasting is required for the inputs.
             outputs = tf.tensordot(inputs, kernel, [[rank - 1], [0]])
             # Reshape the output back to the original ndim of the input.
-            if not context.executing_eagerly():
+            if not tf.executing_eagerly():
                 shape = inputs.get_shape().as_list()
                 output_shape = shape[:-1] + [self.units]
                 outputs.set_shape(output_shape)
