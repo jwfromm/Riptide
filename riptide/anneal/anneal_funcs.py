@@ -72,6 +72,7 @@ class PACT(tf.keras.layers.Layer):
 def get_sawb_coefficients(bits):
     bits = int(bits)
     coefficient_dict = {1: [0., 1.], 2: [3.19, -2.14], 3: [7.40, -6.66], 4: [11.86, -11.68],
+                        5: [17.08, -17.66], 6: [22.49, -23.95], 7: [28.68, -31.24],
                         8: [32.27, -35.46], 16: [34.26, -37.60], 32: [40.60, -45.33]}
     return coefficient_dict[bits]
 
