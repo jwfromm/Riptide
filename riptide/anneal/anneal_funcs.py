@@ -35,6 +35,7 @@ class PACT(tf.keras.layers.Layer):
         self.bits = bits
         if self.bits is None:
             self.bits = self.scope.a_bits
+        self.bits = float(self.bits)
         self.fixed = self.scope.fixed
 
     def build(self, input_shape):
@@ -101,6 +102,7 @@ class SAWBConv2D(tf.keras.layers.Conv2D):
         self.bits = bits
         if self.bits is None:
             self.bits = self.scope.w_bits
+        self.bits = float(self.bits)
         if self.quantize:
             self.c1, self.c2 = get_sawb_coefficients(self.bits)
 
