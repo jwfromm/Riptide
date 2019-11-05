@@ -1,5 +1,7 @@
 from .alexnet import alexnet
-from .resnet import ResNet18
+# from .resnet import ResNet18
+# New Resnet
+from .resnet18 import resnet18
 from .squeezenet import SqueezeNet
 
 

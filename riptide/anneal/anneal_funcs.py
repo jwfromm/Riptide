@@ -96,7 +96,7 @@ def SAWBQuantize(x, alpha, bits):
 
 
 class SAWBConv2D(tf.keras.layers.Conv2D):
-    def __init__(self, bits=None, *args, **kwargs):
+    def __init__(self, bits=None, parent=None, *args, **kwargs):
         super(SAWBConv2D, self).__init__(*args, **kwargs)
         self.scope = Config.current
         self.quantize = self.scope.quantize
@@ -106,6 +106,10 @@ class SAWBConv2D(tf.keras.layers.Conv2D):
         self.bits = float(self.bits)
         if self.quantize:
             self.c1, self.c2 = get_sawb_coefficients(self.bits)
+        # optional for converting, reference to the layer that
+        # quantized the outputs
+        self.parent = parent 
+        
 
     def call(self, inputs):
         if self.quantize:
