@@ -57,7 +57,7 @@ RUN go get github.com/bazelbuild/buildtools/buildifier
 ENV PATH $PATH:/go/bin
 
 RUN pip --no-cache-dir install \
-	tensorflow-gpu \
+	tensorflow \
 	keras_applications \
 	keras_preprocessing \
     Pillow \
@@ -82,9 +82,7 @@ RUN pip --no-cache-dir install \
     tensorboard \
     tensorflow-hub \
     tensorflow-probability \
-    #tensorflow-data-validation \
-    #tensorflow-transform \
-    #tensorflow-model-analysis \
+    tensorflow-datasets \
     jupyter \
     jupyterlab \
     keras \
@@ -112,7 +110,7 @@ ENV PYTHONPATH /home/models/research:$PYTHONPATH
 ENV PYTHONPATH /home/models/:$PYTHONPATH
 ENV PYTHONPATH /home/Riptide:$PYTHONPATH
 ENV PYTHONPATH /home/FoveNet:$PYTHONPATH
-ENV TVM_HOME /home/tvm
+ENV TVM_HOME /home/Riptide/tvm
 ENV PYTHONPATH $TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:$PYTHONPATH
 
 # Make home bazel workspace
