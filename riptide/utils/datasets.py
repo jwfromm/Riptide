@@ -68,7 +68,7 @@ def imagerecord_dataset(root,
 
 
 def _parse_imagefolder_samples(filename, label, preprocess=None):
-    image_string = tf.read_file(filename)
+    image_string = tf.io.read_file(filename)
     image_decoded = tf.image.decode_jpeg(image_string, channels=3)
     if preprocess is not None:
         image_decoded = preprocess(image_decoded)

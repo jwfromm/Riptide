@@ -1,9 +1,9 @@
 import os
 import multiprocessing
 import tensorflow as tf
+import tensorflow_datasets as tfds
 from functools import partial
 from riptide.get_models import get_model
-from riptide.utils.datasets import imagerecord_dataset
 from riptide.utils.thread_helper import setup_gpu_threadpool
 from riptide.binary.binary_layers import Config, DQuantize, XQuantize
 from riptide.utils.preprocessing.inception_preprocessing import preprocess_image
@@ -42,33 +42,41 @@ def main(argv):
     op_threads, num_workers = setup_gpu_threadpool(len(FLAGS.gpus.split(',')))
     num_gpus = len(FLAGS.gpus.split(','))
     # Set up the data input functions.
-    train_preprocess = partial(
-        preprocess_image,
-        height=FLAGS.image_size,
-        width=FLAGS.image_size,
-        is_training=True)
-    eval_preprocess = partial(
-        preprocess_image,
-        height=FLAGS.image_size,
-        width=FLAGS.image_size,
-        is_training=False)
+    def train_preprocess(data):
+        img = preprocess_image(
+            data["image"],
+            height=FLAGS.image_size,
+            width=FLAGS.image_size,
+            is_training=True)
+        return img, data["label"]
+
+    def eval_preprocess(data):
+        img = preprocess_image(
+            data["image"],
+            height=FLAGS.image_size,
+            width=FLAGS.image_size,
+            is_training=False)
+        return img, data["label"]
 
     def train_input_fn():
-        ds = imagerecord_dataset(
-            FLAGS.data_path,
-            FLAGS.batch_size,
-            is_training=True,
-            preprocess=train_preprocess,
-            num_workers=num_workers)
+        ds = tfds.load(
+            "imagenet2012:5.0.0",
+            split=tfds.Split.TRAIN,
+            shuffle_files=True)
+        ds = ds.shuffle(buffer_size=10000)
+        ds = ds.map(train_preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        ds = ds.batch(FLAGS.batch_size)
+        ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
         return ds.repeat(FLAGS.epochs)
 
     def eval_input_fn():
-        return imagerecord_dataset(
-            FLAGS.data_path,
-            FLAGS.batch_size,
-            is_training=False,
-            preprocess=eval_preprocess,
-            num_workers=num_workers)
+        ds = tfds.load(
+            "imagenet2012:5.0.0",
+            split=tfds.Split.VALIDATION)
+        ds = ds.map(eval_preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        ds = ds.batch(FLAGS.batch_size)
+        ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
+        return ds
 
     # Set up estimaor model function.
     def model_fn(features, labels, mode):
@@ -81,7 +89,7 @@ def main(argv):
             use_act = False
             use_bn = False
             use_maxpool = True
-            normal = False
+
         else:
             actQ = None
             weightQ = None
@@ -89,7 +97,7 @@ def main(argv):
             use_act = True
             use_bn = True
             use_maxpool = True
-            normal = True
+
         config = Config(
             actQ=actQ,
             weightQ=weightQ,
