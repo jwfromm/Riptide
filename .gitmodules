@@ -1,0 +1,4 @@
+[submodule "tvm"]
+	path = tvm
+	url = git@github.com:jwfromm/tvm.git
+	branch = riptide
