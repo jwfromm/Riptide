@@ -81,7 +81,7 @@ These include Alexnet, VGGNet, various Resnets, and SqueezeNet. You can create y
 [binary_layers](riptide.binary.binary_layers.py).
 
 To train a model, navigate to [scripts](scripts) and take a look at [train_imagenet.py](scripts/train_imagenet.py). This script provides a simple
-and efficient interface for training models on the [ImageNet Dataset](image-net.org). We use [Tensorflow Datasets](https://www.tensorflow.org/datasets/api_docs/python/tfds)
+and efficient interface for training models on the [ImageNet Dataset](https://www.image-net.org). We use [Tensorflow Datasets](https://www.tensorflow.org/datasets/api_docs/python/tfds)
 to prepare and load images so you'll first need to download ImageNet and have `tfds.load` generate tfrecords.
 
 Once ImageNet is ready, you can start a training job as follows:
