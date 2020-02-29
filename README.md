@@ -4,8 +4,8 @@
 
 Riptide is a collection of functions, scripts, and tools that enable ultra
 low-bitwidth neural networks to be easily trained and deployed at high speeds.
-Riptide is built on top of [Tensorflow](tensorflow.org) for training and
-[TVM](tvm.ai) for deployment. Riptide models uses a novel operator called *Fused
+Riptide is built on top of [Tensorflow](www.tensorflow.org) for training and
+[TVM](www.tvm.ai) for deployment. Riptide models uses a novel operator called *Fused
 Glue* to replace all floating point operations inside of a binary neural
 network. By combining Fused Glue layers with other optimizations such as
 *Bitpack Fusion*, Riptide is able to generate models that run 4-12X faster than
