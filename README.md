@@ -11,7 +11,7 @@ network. By combining Fused Glue layers with other optimizations such as
 *Bitpack Fusion*, Riptide is able to generate models that run 4-12X faster than
 floating point equivalents on the Raspberry Pi. For full implementation details
 see our paper, which was presented at [MLSys
-2020](https://mlsys.org/Conferences/2020/Schedule).
+2020](https://mlsys.org/Conferences/2020/Schedule) and can be found [here](jwfromm.com/documents/Riptide.pdf).
 
 # Getting Started
 ## Requirements
