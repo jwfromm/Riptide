@@ -54,7 +54,7 @@ cd Riptide/tvm && mkdir build && cp cmake/config.cmake build && cd build
 cmake ..
 make -j4
 export TVM_HOME={RiptideLocation}/tvm
-export PYTHONPATH=$TVM_HOME/python;$TVM_HOME/topi/python:$PYTHONPATH
+export PYTHONPATH=$TVM_HOME/python:$TVM_HOME/topi/python:$PYTHONPATH
 ```
 
 Note that if you want to compile a model for an embedded platform like the
