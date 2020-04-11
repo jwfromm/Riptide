@@ -51,11 +51,6 @@ RUN wget https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz
 RUN tar -C /usr/local -xzf go1.11.1.linux-amd64.tar.gz
 ENV PATH $PATH:/usr/local/go/bin
 
-WORKDIR /
-# Install buildifier
-RUN go get github.com/bazelbuild/buildtools/buildifier
-ENV PATH $PATH:/go/bin
-
 RUN pip --no-cache-dir install \
 	tensorflow \
 	keras_applications \
@@ -106,10 +101,16 @@ ENV DISPLAY 0
 # set utf-8 encoding, weird that we have to do this haha
 ENV LC_ALL "C.UTF-8"
 
-ENV PYTHONPATH /home/models/research:$PYTHONPATH
-ENV PYTHONPATH /home/models/:$PYTHONPATH
+# Install Riptide and build TVM
+RUN git clone --recursive https://github.com/jwfromm/Riptide.git
+WORKDIR /home/Riptide/tvm
+RUN mkdir /home/Riptide/tvm/build
+COPY config.cmake build/config.cmake
+WORKDIR /home/Riptide/tvm/build
+RUN cmake ..
+RUN make -j4
+
 ENV PYTHONPATH /home/Riptide:$PYTHONPATH
-ENV PYTHONPATH /home/FoveNet:$PYTHONPATH
 ENV TVM_HOME /home/Riptide/tvm
 ENV PYTHONPATH $TVM_HOME/python:$TVM_HOME/topi/python:$TVM_HOME/nnvm/python:$PYTHONPATH
 
@@ -130,3 +131,5 @@ RUN chmod -R 757 /home
 EXPOSE 6006
 # IPython
 EXPOSE 8888
+
+WORKDIR /home
