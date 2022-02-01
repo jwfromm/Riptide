@@ -27,7 +27,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block1_bn1 = nn.BatchNormalization()
+        self.block1_bn1 = nn.NormalBatchNormalization()
         self.block1_conv2 = nn.BinaryConv2D(
             filters=64,
             kernel_size=3,
@@ -35,7 +35,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block1_bn2 = nn.BatchNormalization()
+        self.block1_bn2 = nn.NormalBatchNormalization()
         self.block1_res = nn.ResidualConnect()
 
         # BasicBlock 2
@@ -46,7 +46,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block2_bn1 = nn.BatchNormalization()
+        self.block2_bn1 = nn.NormalBatchNormalization()
         self.block2_conv2 = nn.BinaryConv2D(
             filters=64,
             kernel_size=3,
@@ -54,7 +54,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block2_bn2 = nn.BatchNormalization()
+        self.block2_bn2 = nn.NormalBatchNormalization()
         self.block2_res = nn.ResidualConnect()
 
         # BasicBlock 3
@@ -65,7 +65,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block3_bn1 = nn.BatchNormalization()
+        self.block3_bn1 = nn.NormalBatchNormalization()
         self.block3_conv2 = nn.BinaryConv2D(
             filters=128,
             kernel_size=3,
@@ -73,7 +73,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block3_bn2 = nn.BatchNormalization()
+        self.block3_bn2 = nn.NormalBatchNormalization()
         self.block3_down_conv = nn.BinaryConv2D(
             filters=128,
             kernel_size=1,
@@ -81,7 +81,7 @@ class resnet18(tf.keras.Model):
             padding='valid',
             activation=None,
             use_bias=False)
-        self.block3_down_bn = nn.BatchNormalization()
+        self.block3_down_bn = nn.NormalBatchNormalization()
         self.block3_res = nn.ResidualConnect()
 
         # BasicBlock 4
@@ -92,7 +92,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block4_bn1 = nn.BatchNormalization()
+        self.block4_bn1 = nn.NormalBatchNormalization()
         self.block4_conv2 = nn.BinaryConv2D(
             filters=128,
             kernel_size=3,
@@ -100,7 +100,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block4_bn2 = nn.BatchNormalization()
+        self.block4_bn2 = nn.NormalBatchNormalization()
         self.block4_res = nn.ResidualConnect()
 
         # BasicBlock 5
@@ -111,7 +111,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block5_bn1 = nn.BatchNormalization()
+        self.block5_bn1 = nn.NormalBatchNormalization()
         self.block5_conv2 = nn.BinaryConv2D(
             filters=256,
             kernel_size=3,
@@ -119,7 +119,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block5_bn2 = nn.BatchNormalization()
+        self.block5_bn2 = nn.NormalBatchNormalization()
         self.block5_down_conv = nn.BinaryConv2D(
             filters=256,
             kernel_size=1,
@@ -127,7 +127,7 @@ class resnet18(tf.keras.Model):
             padding='valid',
             activation=None,
             use_bias=False)
-        self.block5_down_bn = nn.BatchNormalization()
+        self.block5_down_bn = nn.NormalBatchNormalization()
         self.block5_res = nn.ResidualConnect()
 
         # BasicBlock 6
@@ -138,7 +138,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block6_bn1 = nn.BatchNormalization()
+        self.block6_bn1 = nn.NormalBatchNormalization()
         self.block6_conv2 = nn.BinaryConv2D(
             filters=256,
             kernel_size=3,
@@ -146,7 +146,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block6_bn2 = nn.BatchNormalization()
+        self.block6_bn2 = nn.NormalBatchNormalization()
         self.block6_res = nn.ResidualConnect()
 
         # BasicBlock 7
@@ -157,7 +157,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block7_bn1 = nn.BatchNormalization()
+        self.block7_bn1 = nn.NormalBatchNormalization()
         self.block7_conv2 = nn.BinaryConv2D(
             filters=512,
             kernel_size=3,
@@ -165,7 +165,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block7_bn2 = nn.BatchNormalization()
+        self.block7_bn2 = nn.NormalBatchNormalization()
         self.block7_down_conv = nn.BinaryConv2D(
             filters=512,
             kernel_size=1,
@@ -173,7 +173,7 @@ class resnet18(tf.keras.Model):
             padding='valid',
             activation=None,
             use_bias=False)
-        self.block7_down_bn = nn.BatchNormalization()
+        self.block7_down_bn = nn.NormalBatchNormalization()
         self.block7_res = nn.ResidualConnect()
 
         # BasicBlock 8
@@ -184,7 +184,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block8_bn1 = nn.BatchNormalization()
+        self.block8_bn1 = nn.NormalBatchNormalization()
         self.block8_conv2 = nn.BinaryConv2D(
             filters=512,
             kernel_size=3,
@@ -192,7 +192,7 @@ class resnet18(tf.keras.Model):
             padding='same',
             activation=None,
             use_bias=False)
-        self.block8_bn2 = nn.BatchNormalization()
+        self.block8_bn2 = nn.NormalBatchNormalization()
         self.block8_res = nn.ResidualConnect()
 
         self.avg_pool = nn.GlobalAveragePooling2D()
